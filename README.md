@@ -4,7 +4,7 @@
 | Script                     | Documented?      | Unit testing? |
 | :----:                     | :--------:       | :-----------: |
 | theta_from_cylindrical.m   |:white_check_mark:| :x:           |
-| r_from_spherical.m         | :x:              | :x:           |
+| r_from_spherical.m         |:white_check_mark:| :x:           |
 | maximum_contact_radius.m   |:white_check_mark:| :x:           |
 | zeta_generator.m           |:white_check_mark:| :x:           |
 | my_legendre.m              | :x:              | :x:           |
