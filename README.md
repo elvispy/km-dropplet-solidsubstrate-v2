@@ -2,16 +2,16 @@
 
 ### Todo
 
-- [ ] project amplitudes.m
 - [ ] theta_from_cylindrical.m
 - [ ] r_from_spherical.m
-- [ ] zeta_generator.m
-- [ ] collectdnPl.m
-- [ ] collectPl.m
-- [ ] legendre_ddx.m
-- [ ] legendre_dx.m
 - [ ] maximum_contact_radius.m
+- [ ] zeta_generator.m
 - [ ] my_legendre.m
+- [ ] legendre_dx.m
+- [ ] legendre_ddx.m
+- [ ] collectPl.m
+- [ ] collectdnPl.m
+- [ ] project amplitudes.m
 - [ ] my_wigner3j.m (Elvis)
 - [ ] kill_pressure_outside.m (Elvis)
 - [ ] fclencurt.m (Elvis)
