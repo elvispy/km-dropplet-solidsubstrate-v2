@@ -25,3 +25,4 @@ Manifest.toml
 
 # Matlab autosave files
 *.asv
+*.DS_Store
