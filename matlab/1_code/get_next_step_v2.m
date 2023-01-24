@@ -135,7 +135,8 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
                 new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 3
                 new_CM_velocity  = sum(arrayfun(@(idx) (-1)^idx * new_velocities(idx), 2:nb_harmonics));
-                new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+                %new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+                new_centerofmass = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
         end % end switch statement
     end
     
@@ -168,9 +169,40 @@ end
 function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, ...
     new_centerofmass, PROBLEM_CONSTANTS, previous_contact_radius, probable_pressures)
     
-    
     zeta = zeta_generator(new_amplitudes);
     z = @(theta) new_centerofmass + cos(theta) .* (1 + zeta(theta));
+
+    angle = pi;
+    crossed = false;
+    step = pi/500;
+    tol = pi/100000;
+    down = true;
+    while step >= tol
+        val = z(angle);
+        if val < -PROBLEM_CONSTANTS.spatial_tol; crossed = true; end
+        
+        if down == true && val >= -PROBLEM_CONSTANTS.spatial_tol
+            down = false;
+            step = step / 2;
+        elseif down == false && val < -PROBLEM_CONSTANTS.spatial_tol
+            down = true;
+            step = step / 2;
+        end
+        if down == true
+            angle = angle - step; 
+        else
+            angle = angle + step;
+        end
+    end
+    
+    if crossed == true && norm(probable_pressures) == 0
+        error = inf;
+    elseif norm(probable_pressures) == 0
+        error = 0;
+    end
+    
+    
+    
     N = 500;
     thetas = linspace(max(pi/2, theta_from_cylindrical(previous_contact_radius, new_amplitudes) - 2*pi/10), pi, N);
     
