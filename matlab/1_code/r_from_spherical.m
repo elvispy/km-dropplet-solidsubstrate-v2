@@ -25,6 +25,7 @@ function r = r_from_spherical(angles, amplitudes)
 % Written by: Elvis Aguero- 01/01/2023
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if isstruct(amplitudes); amplitudes = amplitudes.deformation_amplitudes; end
     if size(amplitudes, 2) > 1; amplitudes = amplitudes'; end
     r = sin(angles) .* (1 + sum(amplitudes .* collectPl(length(amplitudes), cos(angles)), 1));
 %     r = arrayfun(@(angle) ...

@@ -128,14 +128,22 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
                 d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - pressure_amplitudes_tentative(1);%- sum(coefs(1:n) .* extract_symbol("center_of_mass_velocity"), 1:n));
 
                 for hb = 2:nb_harmonics
-                    d2zd2t = d2zd2t + 3 * (new_amplitudes(hb) / (2*hb+1)) * (Cl(hb) - Dl(hb)); 
+                    d2zd2t = d2zd2t + 3 * (new_amplitudes(hb) / (2*hb+1)) * (Cl(hb) - Dl(hb));  % THIS IS WRONG IF THE FIRST PRESSURE COEFFICIENT IS DISREGARDED
                 end
                 new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 3
                 new_CM_velocity  = sum(arrayfun(@(idx) (-1)^idx * new_velocities(idx), 2:nb_harmonics));
-                %new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
                 new_centerofmass = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
+            case 4
+                new_CM_velocity  = sum(arrayfun(@(idx) (-1)^idx * new_velocities(idx), 2:nb_harmonics));
+                new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+            case 5
+                d2zd2t = - sum(arrayfun(@(idx) (-1)^idx * (idx * probable_next_conditions.pressure_amplitudes(idx) ...
+                    + PROBLEM_CONSTANTS.omegas_frequencies(idx)^2 * new_amplitudes(idx)), 2:nb_harmonics));
+                new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
+                new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+                
         end % end switch statement
     end
     

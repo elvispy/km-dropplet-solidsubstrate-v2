@@ -49,7 +49,7 @@ function new_probable_next_conditions = pressure_with_flattened_surface(probable
 %%case 3
 
     % JUST TO CHECK THAT B1 is not being used
-    pressure_guess(1) = inf;%(d2zd2t - dot(coefs, [extract_symbol('center_of_mass_velocity'), ...
+    pressure_guess(1) = 0;%(d2zd2t - dot(coefs, [extract_symbol('center_of_mass_velocity'), ...
         %new_CM_velocity])/dt)/(1 - 0.4 * amplitudes_modified(2));
     
     new_probable_next_conditions = probable_next_conditions;
