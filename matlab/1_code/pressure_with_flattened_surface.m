@@ -3,10 +3,17 @@ function new_probable_next_conditions = pressure_with_flattened_surface(probable
     nb_harmonics = probable_next_conditions.nb_harmonics;
     
     theta_contact = theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions);
-    g = zeta_generator(probable_next_conditions);
-    f = @(theta) f_generator(theta, theta_contact, g, probable_next_conditions.center_of_mass);
-    amplitudes_modified = project_amplitudes(f, nb_harmonics, [0, pi, theta_contact], PROBLEM_CONSTANTS, true);
-    amplitudes_modified(1) = 0;        
+    M = 5 * nb_harmonics;
+    thetas = linspace(theta_contact, pi, M);
+    LVAL = collectPl(nb_harmonics, cos(thetas));
+    LVAL = LVAL(2:end, :)';
+    b = -probable_next_conditions.center_of_mass./cos(thetas) - 1; b = b';
+    
+    amplitudes_modified = [0, lsqr(LVAL, b, [], 100, [], [], previous_conditions{end}.deformation_amplitudes(2:end)')'];
+%     g = zeta_generator(probable_next_conditions);
+%     f = @(theta) f_generator(theta, theta_contact, g, probable_next_conditions.center_of_mass);
+    %amplitudes_modified = project_amplitudes(f, nb_harmonics, [0, pi, theta_contact], PROBLEM_CONSTANTS, true);
+    %amplitudes_modified(1) = 0;        
     pressure_guess = solve_ODE_unkown(amplitudes_modified, nan, probable_next_conditions.dt, previous_conditions, PROBLEM_CONSTANTS);
     
     % Now we must Calculate B(1) by hand 
@@ -41,8 +48,9 @@ function new_probable_next_conditions = pressure_with_flattened_surface(probable
     %new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
 %%case 3
 
-    pressure_guess(1) = (d2zd2t - dot(coefs, [extract_symbol('center_of_mass_velocity'), ...
-        new_CM_velocity])/dt)/(1 - 0.4 * amplitudes_modified(2));
+    % JUST TO CHECK THAT B1 is not being used
+    pressure_guess(1) = inf;%(d2zd2t - dot(coefs, [extract_symbol('center_of_mass_velocity'), ...
+        %new_CM_velocity])/dt)/(1 - 0.4 * amplitudes_modified(2));
     
     new_probable_next_conditions = probable_next_conditions;
     new_probable_next_conditions.pressure_amplitudes = pressure_guess;

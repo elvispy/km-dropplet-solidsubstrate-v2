@@ -157,7 +157,7 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     
     my_tol = 1e-2; is_it_acceptable = false; 
     if norm(new_amplitudes - previous_conditions{end}.deformation_amplitudes) < my_tol ...
-       && abs(new_contact_radius - previous_conditions{end}.contact_radius) < PROBLEM_CONSTANTS.angle_tol ...
+       && abs(new_contact_radius - previous_conditions{end}.contact_radius) < r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
        && error < my_tol
         is_it_acceptable = true;
     end
@@ -168,39 +168,37 @@ end
 function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, ...
     new_centerofmass, PROBLEM_CONSTANTS, previous_contact_radius, probable_pressures)
     
+%     angle = pi;
+%     crossed = false;
+%     step = pi/500;
+%     tol = pi/100000;
+%     down = true;
+%     while step >= tol
+%         val = z(angle);
+%         if val < -PROBLEM_CONSTANTS.spatial_tol; crossed = true; end
+%         
+%         if down == true && val >= -PROBLEM_CONSTANTS.spatial_tol
+%             down = false;
+%             step = step / 2;
+%         elseif down == false && val < -PROBLEM_CONSTANTS.spatial_tol
+%             down = true;
+%             step = step / 2;
+%         end
+%         if down == true
+%             angle = angle - step; 
+%         else
+%             angle = angle + step;
+%         end
+%     end    
+%     
+%     if crossed == true && norm(probable_pressures) == 0
+%         error = inf;
+%     elseif norm(probable_pressures) == 0
+%         error = 0;
+%     end
+    
     zeta = zeta_generator(new_amplitudes);
     z = @(theta) new_centerofmass + cos(theta) .* (1 + zeta(theta));
-
-    angle = pi;
-    crossed = false;
-    step = pi/500;
-    tol = pi/100000;
-    down = true;
-    while step >= tol
-        val = z(angle);
-        if val < -PROBLEM_CONSTANTS.spatial_tol; crossed = true; end
-        
-        if down == true && val >= -PROBLEM_CONSTANTS.spatial_tol
-            down = false;
-            step = step / 2;
-        elseif down == false && val < -PROBLEM_CONSTANTS.spatial_tol
-            down = true;
-            step = step / 2;
-        end
-        if down == true
-            angle = angle - step; 
-        else
-            angle = angle + step;
-        end
-    end
-    
-    if crossed == true && norm(probable_pressures) == 0
-        error = inf;
-    elseif norm(probable_pressures) == 0
-        error = 0;
-    end
-    
-    
     
     N = 500;
     thetas = linspace(max(pi/2, theta_from_cylindrical(previous_contact_radius, new_amplitudes) - 2*pi/10), pi, N);
@@ -219,9 +217,9 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
     if sum(zs_evaluated < PROBLEM_CONSTANTS.spatial_tol)/N >= 0.995
         warning("Must make contact angle bigger!");
     end
-    idx = 1;
-    while zs_evaluated(idx) > PROBLEM_CONSTANTS.spatial_tol && idx < N
-        idx = idx + 1;
+    idx = N;
+    while zs_evaluated(idx) <= PROBLEM_CONSTANTS.spatial_tol && idx > 1
+        idx = idx - 1;
     end
     
     % Penalizing places where there is pressure but no contact
@@ -244,6 +242,8 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
     
     %if sum(abs(intersect(idx:end)) < spatial_tol)/N >= 0.995
     new_contact_radius = r_from_spherical(thetas(min(idx, idx2)), new_amplitudes);
+    %%-crp = r_from_spherical(theta_from_cylindrical(previous_contact_radius, new_amplitudes)-PROBLEM_CONSTANTS.angle_tol, new_amplitudes);
+    %%-new_contact_radius = min(crp, new_contact_radius);
     error = norm(zs_evaluated(min(idx, idx2):end));
     %else
     %    error = 
@@ -331,129 +331,129 @@ end
 % end
 
 
-
-function [probable_next_conditions, is_it_acceptable, previous_tentatives, idxs] = ...
-    update_tentative_heuristic(probable_next_conditions, ~, ... % previous_conditions in place of ~
-    dr, ~, spatial_tol, PROBLEM_CONSTANTS, previous_tentatives, idxs) % dt in place of ~
-    
-    harmonics_qtt = probable_next_conditions.nb_harmonics;
-    NB_SAMPLES = harmonics_qtt + 1;
-    is_it_acceptable = true;
-    % First, lets check if the given probable next condition is acceptable or not.
-    heights = probable_next_conditions.center_of_mass * ones(1, NB_SAMPLES);
-    pressure_samples = zeros(1, NB_SAMPLES);
-    pressure_amps = zeta_generator(probable_next_conditions.pressure_amplitudes);
-
-    zeta = zeta_generator(probable_next_conditions);
-    contact_radius = dr * (probable_next_conditions.number_contact_points - 1/2);
-
-    % Check if heights are in bounds
-    for ii = 1:NB_SAMPLES
-        % Angle of last contact point
-        theta = theta_from_cylindrical(contact_radius*(ii-1)/(NB_SAMPLES-1), probable_next_conditions.deformation_amplitudes);
-        heights(ii) = heights(ii) +  cos(theta) * (1 + zeta(theta)); 
-        pressure_samples(ii) = pressure_amps(theta) - sum(probable_next_conditions.pressure_amplitudes);
-        if abs(heights(ii)) > spatial_tol
-            is_it_acceptable = false; % We dont break because we will need all heights to guess a new pressure profile
-            % if PROBLEM_CONSTANTS.DEBUG_FLAG; disp("Breaking because heights do not conform to tolerances"); end
-        end
-    end
-    
-    % We dont care about last point
-    %pressure_samples(end) = 0;
-    %heights(end) = 0;
-    
-    % you cant have negative pressures
-    % assert( min(pressure_samples) >= 0,  "Negative pressures!");
-    err = norm(heights);
-    added = false;
-    if length(previous_tentatives) < 2 || err < previous_tentatives{end}.error || err < previous_tentatives{end-1}.error
-        previous_tentatives = {previous_tentatives{1:end} struct("heights", heights,"pressure_samples", pressure_samples, "error", err)};
-        
-        n = length(previous_tentatives);
-        if n > 2
-            added = true;
-            if err < previous_tentatives{idxs(1)}.error && previous_tentatives{idxs(1)}.error > previous_tentatives{idxs(2)}.error
-                idxs(1) = length(previous_tentatives);
-            elseif err < previous_tentatives{idxs(2)}.error
-                idxs(2) = length(previous_tentatives);    
-            end
-        end
-    end
-        
-    % If some height is out of bound, try to adapt pressure coefficients
-    if is_it_acceptable == false
-        % Heuristic tentative: Increase of reduce the pressure at given points to fit flat area.
-        theta_max = theta_from_cylindrical(contact_radius, probable_next_conditions.deformation_amplitudes);
-            
-        % y_velocity(theta::Float64)   = cos(theta)^2 * sum(probable_next_conditions.deformation_velocities .* 
-        %         (collectdnPl(cos(theta); lmax = order, n = 1).parent));
-        %r_positions = ?r * (0:(probable_next_conditions.new_number_contact_points-1));
-
-        % Perturbation at LinRange(0, rmax, harmonics_qtt) to flatten the surface
-        % pressure_perturbation = zeros(harmonics_qtt, 1);
-
-        if length(previous_tentatives) < 2
-            % Modify pressure amplitudes so as to try to flatten the surface
-            pressure_perturbation = times(((heights >= 0) - 0.5), -0.2 * abs(pressure_samples)) ...%arrayfun(@(h) 0.1 * (h+eps)/abs(h+eps), heights)) + ...
-                + (heights <-spatial_tol) .* (abs(pressure_samples) < 1e-3/PROBLEM_CONSTANTS.pressure_unit) *  .05/PROBLEM_CONSTANTS.pressure_unit ...
-                + (heights > spatial_tol) .* (abs(pressure_samples) < 1e-3/PROBLEM_CONSTANTS.pressure_unit) * -.01/PROBLEM_CONSTANTS.pressure_unit ; %arrayfun(@(idx) (heights(idx) < 0) *  ( abs(pressure_samples(idx)) < 1e-8) * 0.01, 1:harmonics_qtt);
-            %theta = theta_from_cylindrical(rmax*(ii-1)/(harmonics_qtt-1), probable_next_conditions.deformation_amplitudes)
-            %%-pressure_perturbation(end) = 0;
-        else
-            % First tentative: assume linearity between the last two tentatives
-            % This interpolator tries to 
-            
-            if added == false %%&& rand() > 0.4
-                pressure_perturbation = times(-abs(previous_tentatives{idxs(2)}.pressure_samples), rand()/15 * ((heights >= 0) - 0.5));
-            else
-                interpolator = @(d1, d2, idx)  ... 
-                     ((d2.heights(idx) * d1.pressure_samples(idx) ...
-                    - d1.heights(idx) * d2.pressure_samples(idx)) / ...
-                     (d2.heights(idx) - d1.heights(idx)));
-                d1 = previous_tentatives{idxs(1)};
-                d2 = previous_tentatives{idxs(2)};
-
-                % We only apply perturbe pressure where the heights is
-                % unnacceptable, 
-                pressure_perturbation = (abs(heights) > spatial_tol/5) .* ...
-                    (arrayfun(@(idx) interpolator(d1, d2, idx), 1:NB_SAMPLES) - pressure_samples);
-                idxs_2 = and(heights < -spatial_tol, pressure_perturbation < 0);
-                pressure_perturbation(idxs_2) = abs(pressure_samples(idxs_2)) * rand()/15;
-                %%-pressure_perturbation(end) = 0;
-            end
-        end
-
-        % Compute new pressure coefficients:
-
-        % Interpolate linearly between pressure points
-
-        f = @(r) interp1(contact_radius * linspace(0, 1, NB_SAMPLES), pressure_perturbation, r, 'linear',  0); 
-        ps = @(theta) f(r_from_spherical(theta, probable_next_conditions.deformation_amplitudes));
-
-        projected_pressure_perturbations = project_amplitudes(ps, harmonics_qtt, [theta_max, pi], PROBLEM_CONSTANTS, true);
-        
-        % Now let's kill pressure distribution outside of contact area
-        %%-pressure_outside_perturbation = kill_pressure_outside(probable_next_conditions, theta_max);
-
-        %assert(all(probable_next_conditions.pressure_amplitudes + projected_pressure_amplitudes >= 0),  "Need to fix this");
-
-        probable_next_conditions.pressure_amplitudes = probable_next_conditions.pressure_amplitudes ...
-            + projected_pressure_perturbations;
-%         probable_next_conditions = ProblemConditions( ...
-%             probable_next_conditions.nb_harmonics, ...
-%             probable_next_conditions.deformation_amplitudes, ...
-%             probable_next_conditions.deformation_velocities, ...
-%             probable_next_conditions.pressure_amplitudes + projected_pressure_perturbations, ...
-%             probable_next_conditions.current_time, ...
-%             probable_next_conditions.dt, ...
-%             probable_next_conditions.center_of_mass, ...
-%             probable_next_conditions.center_of_mass_velocity, ...
-%             probable_next_conditions.number_contact_points);
-   
-    end
-    
-end
+% 
+% function [probable_next_conditions, is_it_acceptable, previous_tentatives, idxs] = ...
+%     update_tentative_heuristic(probable_next_conditions, ~, ... % previous_conditions in place of ~
+%     dr, ~, spatial_tol, PROBLEM_CONSTANTS, previous_tentatives, idxs) % dt in place of ~
+%     
+%     harmonics_qtt = probable_next_conditions.nb_harmonics;
+%     NB_SAMPLES = harmonics_qtt + 1;
+%     is_it_acceptable = true;
+%     % First, lets check if the given probable next condition is acceptable or not.
+%     heights = probable_next_conditions.center_of_mass * ones(1, NB_SAMPLES);
+%     pressure_samples = zeros(1, NB_SAMPLES);
+%     pressure_amps = zeta_generator(probable_next_conditions.pressure_amplitudes);
+% 
+%     zeta = zeta_generator(probable_next_conditions);
+%     contact_radius = dr * (probable_next_conditions.number_contact_points - 1/2);
+% 
+%     % Check if heights are in bounds
+%     for ii = 1:NB_SAMPLES
+%         % Angle of last contact point
+%         theta = theta_from_cylindrical(contact_radius*(ii-1)/(NB_SAMPLES-1), probable_next_conditions.deformation_amplitudes);
+%         heights(ii) = heights(ii) +  cos(theta) * (1 + zeta(theta)); 
+%         pressure_samples(ii) = pressure_amps(theta) - sum(probable_next_conditions.pressure_amplitudes);
+%         if abs(heights(ii)) > spatial_tol
+%             is_it_acceptable = false; % We dont break because we will need all heights to guess a new pressure profile
+%             % if PROBLEM_CONSTANTS.DEBUG_FLAG; disp("Breaking because heights do not conform to tolerances"); end
+%         end
+%     end
+%     
+%     % We dont care about last point
+%     %pressure_samples(end) = 0;
+%     %heights(end) = 0;
+%     
+%     % you cant have negative pressures
+%     % assert( min(pressure_samples) >= 0,  "Negative pressures!");
+%     err = norm(heights);
+%     added = false;
+%     if length(previous_tentatives) < 2 || err < previous_tentatives{end}.error || err < previous_tentatives{end-1}.error
+%         previous_tentatives = {previous_tentatives{1:end} struct("heights", heights,"pressure_samples", pressure_samples, "error", err)};
+%         
+%         n = length(previous_tentatives);
+%         if n > 2
+%             added = true;
+%             if err < previous_tentatives{idxs(1)}.error && previous_tentatives{idxs(1)}.error > previous_tentatives{idxs(2)}.error
+%                 idxs(1) = length(previous_tentatives);
+%             elseif err < previous_tentatives{idxs(2)}.error
+%                 idxs(2) = length(previous_tentatives);    
+%             end
+%         end
+%     end
+%         
+%     % If some height is out of bound, try to adapt pressure coefficients
+%     if is_it_acceptable == false
+%         % Heuristic tentative: Increase of reduce the pressure at given points to fit flat area.
+%         theta_max = theta_from_cylindrical(contact_radius, probable_next_conditions.deformation_amplitudes);
+%             
+%         % y_velocity(theta::Float64)   = cos(theta)^2 * sum(probable_next_conditions.deformation_velocities .* 
+%         %         (collectdnPl(cos(theta); lmax = order, n = 1).parent));
+%         %r_positions = ?r * (0:(probable_next_conditions.new_number_contact_points-1));
+% 
+%         % Perturbation at LinRange(0, rmax, harmonics_qtt) to flatten the surface
+%         % pressure_perturbation = zeros(harmonics_qtt, 1);
+% 
+%         if length(previous_tentatives) < 2
+%             % Modify pressure amplitudes so as to try to flatten the surface
+%             pressure_perturbation = times(((heights >= 0) - 0.5), -0.2 * abs(pressure_samples)) ...%arrayfun(@(h) 0.1 * (h+eps)/abs(h+eps), heights)) + ...
+%                 + (heights <-spatial_tol) .* (abs(pressure_samples) < 1e-3/PROBLEM_CONSTANTS.pressure_unit) *  .05/PROBLEM_CONSTANTS.pressure_unit ...
+%                 + (heights > spatial_tol) .* (abs(pressure_samples) < 1e-3/PROBLEM_CONSTANTS.pressure_unit) * -.01/PROBLEM_CONSTANTS.pressure_unit ; %arrayfun(@(idx) (heights(idx) < 0) *  ( abs(pressure_samples(idx)) < 1e-8) * 0.01, 1:harmonics_qtt);
+%             %theta = theta_from_cylindrical(rmax*(ii-1)/(harmonics_qtt-1), probable_next_conditions.deformation_amplitudes)
+%             %%-pressure_perturbation(end) = 0;
+%         else
+%             % First tentative: assume linearity between the last two tentatives
+%             % This interpolator tries to 
+%             
+%             if added == false %%&& rand() > 0.4
+%                 pressure_perturbation = times(-abs(previous_tentatives{idxs(2)}.pressure_samples), rand()/15 * ((heights >= 0) - 0.5));
+%             else
+%                 interpolator = @(d1, d2, idx)  ... 
+%                      ((d2.heights(idx) * d1.pressure_samples(idx) ...
+%                     - d1.heights(idx) * d2.pressure_samples(idx)) / ...
+%                      (d2.heights(idx) - d1.heights(idx)));
+%                 d1 = previous_tentatives{idxs(1)};
+%                 d2 = previous_tentatives{idxs(2)};
+% 
+%                 % We only apply perturbe pressure where the heights is
+%                 % unnacceptable, 
+%                 pressure_perturbation = (abs(heights) > spatial_tol/5) .* ...
+%                     (arrayfun(@(idx) interpolator(d1, d2, idx), 1:NB_SAMPLES) - pressure_samples);
+%                 idxs_2 = and(heights < -spatial_tol, pressure_perturbation < 0);
+%                 pressure_perturbation(idxs_2) = abs(pressure_samples(idxs_2)) * rand()/15;
+%                 %%-pressure_perturbation(end) = 0;
+%             end
+%         end
+% 
+%         % Compute new pressure coefficients:
+% 
+%         % Interpolate linearly between pressure points
+% 
+%         f = @(r) interp1(contact_radius * linspace(0, 1, NB_SAMPLES), pressure_perturbation, r, 'linear',  0); 
+%         ps = @(theta) f(r_from_spherical(theta, probable_next_conditions.deformation_amplitudes));
+% 
+%         projected_pressure_perturbations = project_amplitudes(ps, harmonics_qtt, [theta_max, pi], PROBLEM_CONSTANTS, true);
+%         
+%         % Now let's kill pressure distribution outside of contact area
+%         %%-pressure_outside_perturbation = kill_pressure_outside(probable_next_conditions, theta_max);
+% 
+%         %assert(all(probable_next_conditions.pressure_amplitudes + projected_pressure_amplitudes >= 0),  "Need to fix this");
+% 
+%         probable_next_conditions.pressure_amplitudes = probable_next_conditions.pressure_amplitudes ...
+%             + projected_pressure_perturbations;
+% %         probable_next_conditions = ProblemConditions( ...
+% %             probable_next_conditions.nb_harmonics, ...
+% %             probable_next_conditions.deformation_amplitudes, ...
+% %             probable_next_conditions.deformation_velocities, ...
+% %             probable_next_conditions.pressure_amplitudes + projected_pressure_perturbations, ...
+% %             probable_next_conditions.current_time, ...
+% %             probable_next_conditions.dt, ...
+% %             probable_next_conditions.center_of_mass, ...
+% %             probable_next_conditions.center_of_mass_velocity, ...
+% %             probable_next_conditions.number_contact_points);
+%    
+%     end
+%     
+% end
 
 
 %Calculates the exit angle at the contact angle theta

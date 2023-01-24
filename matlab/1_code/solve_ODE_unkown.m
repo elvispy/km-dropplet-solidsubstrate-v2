@@ -32,8 +32,8 @@ function [unkn, vel] = solve_ODE_unkown(deformation, pressures, dt, previous_con
     if calc_vel
         unkn = -result./(coefs(end)^2/dt + om.^2 * dt);
         vel = (coefs(end) * unkn + sum(coefs(1:(end-1)) .* previous_deformation, 2))/dt;
-        %%- vel(1)  = 0; 
-        %%- unkn(1) = 0; 
+        vel(1)  = 0; 
+        unkn(1) = 0; 
     else
         unkn = -result./(dt * (1:nb_harmonics)');
         vel = nan;
