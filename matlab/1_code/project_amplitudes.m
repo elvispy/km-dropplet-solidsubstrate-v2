@@ -8,10 +8,17 @@ function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTA
             f = @(theta, idx) my_legendre(idx, cos(theta))' .* ff(theta) .* sin(theta);
         end
             
-        coefs = arrayfun(@(idx) ...
-            (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-            'RelTol', 5e-3), 1:harmonics_qtt);
+        if length(endpoints) > 2            
+            coefs = arrayfun(@(idx) ...
+                (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
+                'RelTol', 1e-3, 'AbsTol', 0.0, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
+        else
+            coefs = arrayfun(@(idx) ...
+                (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
+                'RelTol', 1e-3, 'AbsTol', 0.0), 1:harmonics_qtt);
+        end
     else
+        warning("Im deprecated!");
         if endpoints(2) > PROBLEM_CONSTANTS.nodes(1) || endpoints(1) < PROBLEM_CONSTANTS.nodes(end)
             [PROBLEM_CONSTANTS.nodes, PROBLEM_CONSTANTS.weights] = fclencurt(2^19+1, endpoints(1), endpoints(2));
             warning("Integration vector recalculated");

@@ -7,13 +7,13 @@ function angle = theta_from_cylindrical(r, A_l)
 % given amplitudes A_l. (angle pi points downwards)
 % This algorithm uses Newton-Raphson to approximate the angle
 % r and angle are related by the relation
-% r = sin(angle * (1 + \sum_{i=1}^{N}  A_l(i) * Pl(cos(angle)))
+% r = sin(angle) * (1 + \sum_{i=1}^{N}  A_l(i) * Pl(cos(angle)))
 % where Pl is the l-th legendre Polynomial. (see
 % https://en.wikipedia.org/wiki/Legendre_polynomials#Rodrigues'_formula_and_other_explicit_formulas) 
 
 % Arguments:
 % - r: One dimensional scalar array of non-negative entries
-% - A_l: One dimensional scalar array or STRUCT with field
+% - A_l: One dimensional scalar matrix or STRUCT with field
 % "deformation_amplitudes"
 %
 % Outputs:
