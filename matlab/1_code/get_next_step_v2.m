@@ -105,19 +105,27 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     else
         % There are some ways to calculate the center of mass in case of contact. 
         switch PROBLEM_CONSTANTS.CM
-            case 1 % First way: "Exact integration using pressure coefficients
-                new_contact_radius = 0; % TODO: MODIFY THIS
-                warning("This version is deprecated!");
+            case 1 
+                % First way: "Exact integration using pressure coefficients
+                new_contact_radius = probable_next_conditions.contact_radius; % TODO: MODIFY THIS
+                %warning("This version is deprecated!");
                 cos_theta = cos(theta_from_cylindrical(new_contact_radius, new_amplitudes)); %theta_from_cylindrical(previous_conditions{end}.contact_radius, new_amplitudes)); 
-                d = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
-                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 *d^2 * ...
+                %d = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
+                A =  3/2 * dt * ...
                     sum(probable_next_conditions.pressure_amplitudes .* ...
                         arrayfun(@(idx) integral(@(theta) my_legendre(idx, x)./x.^3, -1, cos_theta), 1:nb_harmonics));
-                % (Now the B0 = -sum(Bl) term)
+                % (Now the B0 = -sum(Bl)  term)
                 f = @(x) -0.5 ./(x.^2);
-                d2zd2t = d2zd2t -3/2 * d^2 * (-sum(probable_next_conditions.pressure_amplitudes) * (f(cos_theta) - f(-1)));
-                new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
-                new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+                A = A + 3/2 * dt * (-sum(probable_next_conditions.pressure_amplitudes) * (f(cos_theta) - f(-1)));
+                
+                B = -coefs(end)^2/dt;
+                
+                C = -dt/PROBLEM_CONSTANTS.froude_nb - coefs(1:n) .* (coefs(end)/dt * extract_symbol('center_of_mass') + extract_symbol('center_of_mass_velocity'));
+                
+                new_centerofmass = (-B + sqrt(B^2 - 4*A*C))/(2*A);
+                new_CM_velocity  = (sum(coefs(1:n) .* extract_symbol('center_of_mass')) + coefs(end) * new_centerofmass)/dt;
+                % new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
+                % new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 2 % Second way: Using the small oscillation's hypothesis
                 warning("This version is deprecated because the first pressure amplitude is needed!");
                 pressure_amplitudes_tentative = [probable_next_conditions.pressure_amplitudes, 0];
@@ -133,16 +141,22 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
                 new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 3
+                % Match exactly velocity and center of mass at pi.
                 new_CM_velocity  = sum(arrayfun(@(idx) (-1)^idx * new_velocities(idx), 2:nb_harmonics));
                 new_centerofmass = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
             case 4
+                % Velocity moves as the amplitudes at pi
                 new_CM_velocity  = sum(arrayfun(@(idx) (-1)^idx * new_velocities(idx), 2:nb_harmonics));
                 new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 5
+                % Zcm accelerates just as the amplitudes at pi
                 d2zd2t = - sum(arrayfun(@(idx) (-1)^idx * (idx * probable_next_conditions.pressure_amplitudes(idx) ...
                     + PROBLEM_CONSTANTS.omegas_frequencies(idx)^2 * new_amplitudes(idx)), 2:nb_harmonics));
                 new_CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+                
+            case 6
+                % Integrate pressure distribution "Exactly on contact area"
                 
         end % end switch statement
     end
