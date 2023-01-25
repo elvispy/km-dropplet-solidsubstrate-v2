@@ -59,7 +59,7 @@ function [probable_next_conditions, errortan] = ...
         rmax = dr * (probable_next_conditions.number_contact_points - 1/2);
         errortan = calculate_exit_angle(probable_next_conditions, ...
             theta_from_cylindrical(rmax, probable_next_conditions));
-    elseif previous_conditions.contact_radius > PROBLEM_CONSTANTS.angle_tol 
+    elseif previous_conditions{end}.contact_radius > r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions)
         % If angle step is too big, we must make dt smaller
         errortan = inf;
     end
