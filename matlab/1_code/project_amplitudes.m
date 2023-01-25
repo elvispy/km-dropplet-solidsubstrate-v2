@@ -11,11 +11,11 @@ function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTA
         if length(endpoints) > 2   % Endpoints may have a third argument, the place where a discontinuity happens.          
             coefs = arrayfun(@(idx) ...
                 (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-                'RelTol', 1e-3, 'AbsTol', 1e-5, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
+                'RelTol', 1e-4, 'AbsTol', 1e-5, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
         else
             coefs = arrayfun(@(idx) ...
                 (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-                'RelTol', 1e-3, 'AbsTol', 1e-5), 1:harmonics_qtt);
+                'RelTol', 1e-4, 'AbsTol', 1e-5), 1:harmonics_qtt);
         end
     else
         warning("Im deprecated!");

@@ -19,7 +19,7 @@ function W = precomputed_wigner(harmonics_qtt)
     for kk = (order+1):harmonics_qtt
         for ll = 1:kk
             W{kk, ll} = zeros(1, 1+kk+ll - abs(kk-ll));
-            for mm = (abs(kk-ll) + mod(abs(kk-ll), 2)):(kk+ll)
+            for mm = abs(kk-ll):(kk+ll)%(abs(kk-ll) + mod(abs(kk-ll), 2)):(kk+ll)
                W{kk, ll}(mm+1) = Wigner3j([kk ll mm], [0 0 0]);
             end
         end

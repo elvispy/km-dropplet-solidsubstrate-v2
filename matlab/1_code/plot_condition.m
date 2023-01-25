@@ -5,9 +5,9 @@ function plot_condition(idx, conditions, varargin)
     else
         set(gcf, 'Position', [0   159 760 586]);
     end
-    clf; hold on; 
+    clf; hold on;  
     cut = 0.75 * pi;
-    sample = [linspace(0, cut, 50), linspace(cut, pi, 100)];
+    sample = [linspace(0, cut, 50), linspace(cut, pi, 50)];
     arrX = sin(sample);
     arrY = cos(sample);
     etas = zeta_generator(conditions);
@@ -32,8 +32,11 @@ function plot_condition(idx, conditions, varargin)
     scatter(0, 0, 'Marker', 'o', 'MarkerEdgeColor', 'b', 'LineWidth', 2, 'SizeData', 10);
     if isstruct(conditions)
         zps = zeta_generator(conditions.pressure_amplitudes);
-        ps = @(ang) zps(ang) - sum(conditions.pressure_amplitudes);
-        quiver(EtaX, EtaY, -ps(sample) .* arrX, -ps(sample) .* arrY);  
+        avg = mean(zps(linspace(0, pi/10)));
+        ps = @(ang) zps(ang) - avg;
+        mps = ps(sample);
+        mps(5) = 1;
+        quiver(EtaX, EtaY, mps .* (-arrX), mps .* (-arrY));  
     end
     
     if nargin > 2 && isstruct(conditions)
