@@ -25,7 +25,7 @@ function [probable_next_conditions, errortan] = ...
     %is_it_acceptable = false;
     best_condition = {};
     minerror = inf;
-    for idx = 1:100 
+    for idx = 1:50
         [probable_next_conditions, is_it_acceptable, error] = ...
             advance_conditions(probable_next_conditions, ...
                 previous_conditions, PROBLEM_CONSTANTS);
@@ -56,10 +56,10 @@ function [probable_next_conditions, errortan] = ...
     end
     
     if probable_next_conditions.contact_radius > 0
-        rmax = dr * (probable_next_conditions.number_contact_points - 1/2);
+        % rmax = maximum_contact_radius(probable_next_conditions); % dr * (probable_next_conditions.number_contact_points - 1/2); %% TODO FIX THIS
         errortan = calculate_exit_angle(probable_next_conditions, ...
-            theta_from_cylindrical(rmax, probable_next_conditions));
-    elseif previous_conditions.contact_radius > PROBLEM_CONSTANTS.angle_tol 
+            theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions));
+    elseif probable_next_conditions.contact_radius > r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions)
         % If angle step is too big, we must make dt smaller
         errortan = inf;
     end
@@ -84,28 +84,9 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     
     nb_harmonics = previous_conditions{end}.nb_harmonics;
     
-    if norm(probable_next_conditions.pressure_amplitudes) == 0
-        n = length(previous_conditions); % Determines the order of the method
-        if n > 2 || n < 1; throw("Hey!"); end
+    [new_centerofmass, new_CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, ...
+        probable_next_conditions, previous_conditions, PROBLEM_CONSTANTS);
 
-        extract_symbol = @(field) arrayfun(@(jj) previous_conditions{jj}.(field), 1:n);
-
-        if n == 1
-            coefs = [-1.0, 1.0];
-        elseif n == 2
-            rk = dt/previous_conditions{end}.dt;
-            ak = (1+2*rk)/(1+rk);
-            bk = -(1+rk);
-            ck = rk^2/(1+rk);
-            coefs = [ck, bk, ak]; 
-        end
-        new_CM_velocity = (-dt/PROBLEM_CONSTANTS.froude_nb - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
-        new_centerofmass = (dt * new_CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);    
-    else
-        [new_centerofmass, new_CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, ...
-            probable_next_conditions, previous_conditions, PROBLEM_CONSTANTS);
-    end
-    
     [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, new_centerofmass, ...
         PROBLEM_CONSTANTS, previous_conditions{end}.contact_radius, probable_next_conditions.pressure_amplitudes);
         
@@ -121,11 +102,10 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     new_contact_radius);
 
     % Now let's check if convergence was attained
-    
     my_tol = 1e-2; is_it_acceptable = false; 
-    if norm(new_amplitudes - previous_conditions{end}.deformation_amplitudes) < my_tol ...
-       && abs(new_contact_radius - previous_conditions{end}.contact_radius) < r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
-       && error < my_tol
+    if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol ...
+       && abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
+       && error < my_tol^2
         is_it_acceptable = true;
     end
     

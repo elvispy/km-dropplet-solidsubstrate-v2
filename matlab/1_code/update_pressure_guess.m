@@ -2,7 +2,7 @@ function new_probable_next_conditions = update_pressure_guess(probable_next_cond
             previous_conditions, PROBLEM_CONSTANTS)
         
     if probable_next_conditions.contact_radius < 1e-5
-        pressure_guess = probable_next_conditions.pressure_amplitudes/2;
+        pressure_guess = 0.5 * probable_next_conditions.pressure_amplitudes;
         new_probable_next_conditions = probable_next_conditions;
         new_probable_next_conditions.pressure_amplitudes = pressure_guess;
         return
@@ -20,8 +20,8 @@ function new_probable_next_conditions = update_pressure_guess(probable_next_cond
             LVAL = collectPl(nb_harmonics, cos(thetas));
             LVAL = LVAL(2:end, :)';
             b = -probable_next_conditions.center_of_mass./cos(thetas) - 1; b = b';
-
-            amplitudes_modified = [0, lsqr(LVAL, b, [], 100, [], [], previous_conditions{end}.deformation_amplitudes(2:end)')'];
+            [amps, ~] = lsqr(LVAL, b, [], 100, [], [], probable_next_conditions.deformation_amplitudes(2:end)');
+            amplitudes_modified = [0, amps'];
 
         case 2
             % Flatten by "Frankenstein"

@@ -1,22 +1,30 @@
 function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTANTS, flag) % PROBLEM CONSTANTS used to be here 
     %flag = true;
     if flag
-        f = @(theta, idx) my_legendre(idx, cos(theta)) .* ff(theta) .* sin(theta);
-        try
-            f([0 1], 3);
-        catch
-            f = @(theta, idx) my_legendre(idx, cos(theta))' .* ff(theta) .* sin(theta);
-        end
+%         f = @(theta, idx) my_legendre(idx, cos(theta)) .* ff(theta) .* sin(theta);
+%         try
+%             f([0 1], 3);
+%         catch
+%             f = @(theta, idx) my_legendre(idx, cos(theta))' .* ff(theta) .* sin(theta);
+%         end
             
-        if length(endpoints) > 2   % Endpoints may have a third argument, the place where a discontinuity happens.          
-            coefs = arrayfun(@(idx) ...
-                (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-                'RelTol', 1e-4, 'AbsTol', 1e-5, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
-        else
-            coefs = arrayfun(@(idx) ...
-                (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-                'RelTol', 1e-4, 'AbsTol', 1e-5), 1:harmonics_qtt);
-        end
+%         if length(endpoints) > 2   % Endpoints may have a third argument, the place where a discontinuity happens.          
+% %             coefs = arrayfun(@(idx) ...
+% %                 (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
+% %                 'RelTol', 1e-4, 'AbsTol', 1e-5, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
+%             coefs = ((1:harmonics_qtt) + 0.5)' .* ...
+%                 integral(@(theta) (ff(theta) .* sin(theta)) .* collectPl(harmonics_qtt, cos(theta)), ...
+%                     endpoints(1), endpoints(2), 'RelTol', 1e-4, 'AbsTol', 1e-5, 'ArrayValued', 1);
+%         else
+            %coefs = arrayfun(@(idx) ...
+            %    (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
+            %    'RelTol', 1e-4, 'AbsTol', 1e-5), 1:harmonics_qtt);
+            coefs = ((1:harmonics_qtt) + 0.5)' .* ...
+                integral(@(theta) (ff(theta) .* sin(theta)) .* collectPl(harmonics_qtt, cos(theta)), ...
+                    endpoints(1), endpoints(2), 'RelTol', 1e-5, 'AbsTol', 1e-5, 'ArrayValued', 1);
+            assert(min(size(coefs)) == 1);
+            %fprintf("The norm is: %.4f", norm(coefs
+        %end
     else
         warning("Im deprecated!");
         if endpoints(2) > PROBLEM_CONSTANTS.nodes(1) || endpoints(1) < PROBLEM_CONSTANTS.nodes(end)

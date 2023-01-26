@@ -12,7 +12,7 @@ function solve_motion_v2()
     
     undisturbed_radius = .1;  % Radius of the undeformed spherical sphere 
     initial_height = Inf;    % Initial position of the sphere center of mass of the sphere (Inf = start barely touching)
-    initial_velocity = -10; % Initial velocity of the sphere 
+    initial_velocity = -1; % Initial velocity of the sphere 
     initial_amplitudes = Inf; % Initial amplitudes of the dropplet (Default = undisturbed) OBS: First index is A_1
     initial_contact_radius = 0;
     amplitudes_velocities = [];
@@ -24,7 +24,7 @@ function solve_motion_v2()
     max_dt = 1e-5;         % maximum allowed temporal time step
     min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
     spatial_tol = 1e-4;    % Tolerance to accept that dropplet touches the substrate
-    angle_tol = 5 * pi * spatial_tol;
+    angle_tol =  pi * 1/180;
     simulation_time = 2.0;% Maximum allowed time
     live_plotting = true;     % Whether to plot or not the live results
 
@@ -120,7 +120,7 @@ function solve_motion_v2()
         "spatial_tol", spatial_tol, ...
         "angle_tol", angle_tol, ...
         "pressure_unit", pressure_unit, ...
-        "CM", 5, ...
+        "CM", 6, ...
         "PG", 1, ...
         "KILL_OUTSIDE", true, ...
         "wigner3j", {precomputed_wigner(harmonics_qtt)}, ...
@@ -177,12 +177,13 @@ function solve_motion_v2()
     indexes_to_save = zeros(maximum_index, 1); indexes_to_save(1) = 1;
     current_to_save = 2;
     % p = parpool(5);
-    while ( current_time < final_time) 
+    while ( current_time < final_time) && current_index < 4
         % First, we try to solve with the same number of contact points
         [current_conditions, errortan] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
             
         if abs(errortan) > tan_tol
             dt = dt/2;
+            disp("Se dividio dt por 2");
             % Refine time step in index notation 
             iii = iii + 1; jjj = 2 * jjj;
         else
@@ -217,11 +218,11 @@ function solve_motion_v2()
             if live_plotting == true
                 % Do some live plotting here
 
-                plot_title = sprintf(" t = %-8.5f, CP = %-8g, \n v_k = %-8.5f, z_k = %-8.5f \n", ...
-                   current_time * time_unit, current_conditions.number_contact_points, ...
+                plot_title = sprintf(" t = %-8.5f, Contact Radius = %-8g cm, \n v_k = %-8.5f cm/s, z_k = %-8.5f cm\n", ...
+                   current_time * time_unit, current_conditions.contact_radius, ...
                         current_conditions.center_of_mass_velocity * velocity_unit, ...
                         current_conditions.center_of_mass* length_unit);
-                plot_condition(1, current_conditions, spatial_step, 10, plot_title);
+                plot_condition(1, current_conditions, 10, plot_title);
 
             else
                 % Do some real-time variable updating here
