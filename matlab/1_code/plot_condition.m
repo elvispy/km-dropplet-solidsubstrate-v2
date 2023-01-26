@@ -14,6 +14,7 @@ function plot_condition(idx, conditions, varargin)
     if isstruct(conditions)
         height = conditions.center_of_mass;
         plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'b--', 'LineWidth', 4);
+        yline(1e-4, 'y', 'LineWidth', 2);
     else
         height = 1 + sum(arrayfun(@(idx) (-1)^idx * conditions(idx), 2:length(conditions)));
     end

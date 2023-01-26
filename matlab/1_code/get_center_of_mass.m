@@ -24,7 +24,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
             %warning("This version is deprecated!");
             cos_theta = cos(theta_from_cylindrical(new_contact_radius, new_amplitudes)); %theta_from_cylindrical(previous_conditions{end}.contact_radius, new_amplitudes)); 
             %d = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
-            A =  3/2 * dt * ...
+            A = 3/2 * dt * ...
                 sum(probable_next_conditions.pressure_amplitudes .* ...
                     arrayfun(@(idx) integral(@(x) my_legendre(idx, x)./x.^3, -1, cos_theta), 1:nb_harmonics));
             % (Now the B0 = -sum(Bl)  term)
@@ -32,10 +32,11 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
             z = zeta_generator(probable_next_conditions.pressure_amplitudes);
             avg = mean(z(linspace(0, pi/10)));
             A = A + 3/2 * dt * (-avg) * (f(cos_theta) - f(-1));
+            A = - A;
+            
+            B = coefs(end)^2/dt;
 
-            B = -coefs(end)^2/dt;
-
-            C = -dt/PROBLEM_CONSTANTS.froude_nb - dot(coefs(1:n), ...
+            C = dt/PROBLEM_CONSTANTS.froude_nb + dot(coefs(1:n), ...
                 (coefs(end)/dt * extract_symbol('center_of_mass') + extract_symbol('center_of_mass_velocity')));
 
             CM = (-B + sqrt(B^2 - 4*A*C))/(2*A);

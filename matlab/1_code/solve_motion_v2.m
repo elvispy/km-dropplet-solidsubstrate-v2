@@ -23,7 +23,7 @@ function solve_motion_v2()
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
     max_dt = 1e-5;         % maximum allowed temporal time step
     min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
-    spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
+    spatial_tol = 1e-4;    % Tolerance to accept that dropplet touches the substrate
     angle_tol = 5 * pi * spatial_tol;
     simulation_time = 2.0;% Maximum allowed time
     live_plotting = true;     % Whether to plot or not the live results
