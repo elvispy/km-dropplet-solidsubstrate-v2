@@ -16,14 +16,14 @@ function solve_motion_v2()
     initial_amplitudes = Inf; % Initial amplitudes of the dropplet (Default = undisturbed) OBS: First index is A_1
     initial_contact_radius = 0;
     amplitudes_velocities = [];
-    rhoS = 1.0e-3;%%%%            % Sphere's density
+    rhoS = 0.998;%%%%            % Sphere's density
     sigmaS = 72.20;%%%%%          % Sphere's Surface Tension
     g = 9.8065e+2;%%%          % Gravitational constant
     harmonics_qtt = 200;      % Number of harmonics to be used 
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
-    max_dt = 1e-5;         % maximum allowed temporal time step
+    max_dt = 1e-4;         % maximum allowed temporal time step
     min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
-    spatial_tol = 1e-4;    % Tolerance to accept that dropplet touches the substrate
+    spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
     angle_tol =  pi * 1/180;
     simulation_time = 2.0;% Maximum allowed time
     live_plotting = true;     % Whether to plot or not the live results
@@ -120,9 +120,9 @@ function solve_motion_v2()
         "spatial_tol", spatial_tol, ...
         "angle_tol", angle_tol, ...
         "pressure_unit", pressure_unit, ...
-        "CM", 6, ...
-        "PG", 1, ...
-        "KILL_OUTSIDE", true, ...
+        "CM", 7, ...
+        "PG", 2, ...
+        "KILL_OUTSIDE", false, ...
         "wigner3j", {precomputed_wigner(harmonics_qtt)}, ...
         "DEBUG_FLAG", true);
 
@@ -177,7 +177,7 @@ function solve_motion_v2()
     indexes_to_save = zeros(maximum_index, 1); indexes_to_save(1) = 1;
     current_to_save = 2;
     % p = parpool(5);
-    while ( current_time < final_time) && current_index < 4
+    while ( current_time < final_time)
         % First, we try to solve with the same number of contact points
         [current_conditions, errortan] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
             
@@ -218,8 +218,8 @@ function solve_motion_v2()
             if live_plotting == true
                 % Do some live plotting here
 
-                plot_title = sprintf(" t = %-8.5f, Contact Radius = %-8g cm, \n v_k = %-8.5f cm/s, z_k = %-8.5f cm\n", ...
-                   current_time * time_unit, current_conditions.contact_radius, ...
+                plot_title = sprintf(" t = %-8.5f (ms), Contact Radius = %-8g cm, \n v_k = %-8.5f cm/s, z_k = %-8.5f cm\n", ...
+                   1e+3 * current_time * time_unit, current_conditions.contact_radius, ...
                         current_conditions.center_of_mass_velocity * velocity_unit, ...
                         current_conditions.center_of_mass* length_unit);
                 plot_condition(1, current_conditions, 10, plot_title);

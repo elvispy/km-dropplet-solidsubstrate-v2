@@ -1,8 +1,8 @@
 function new_probable_next_conditions = update_pressure_guess(probable_next_conditions, ...
             previous_conditions, PROBLEM_CONSTANTS)
         
-    if probable_next_conditions.contact_radius < 1e-5
-        pressure_guess = 0.5 * probable_next_conditions.pressure_amplitudes;
+    if probable_next_conditions.contact_radius < 1e-6
+        pressure_guess = 0.9 * probable_next_conditions.pressure_amplitudes;
         new_probable_next_conditions = probable_next_conditions;
         new_probable_next_conditions.pressure_amplitudes = pressure_guess;
         return
@@ -15,7 +15,7 @@ function new_probable_next_conditions = update_pressure_guess(probable_next_cond
             % Least squares on flat surface B(1) is ignored
             
             nb_harmonics = probable_next_conditions.nb_harmonics;
-            M = 5 * nb_harmonics;
+            M = 1 * nb_harmonics;
             thetas = linspace(theta_contact, pi, M);
             LVAL = collectPl(nb_harmonics, cos(thetas));
             LVAL = LVAL(2:end, :)';
@@ -27,7 +27,7 @@ function new_probable_next_conditions = update_pressure_guess(probable_next_cond
             % Flatten by "Frankenstein"
             nb_harmonics = probable_next_conditions.nb_harmonics;
 
-            theta_contact = theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions);
+            %theta_contact = theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions);
 
             g = zeta_generator(probable_next_conditions);
             f = @(theta) f_generator(theta, theta_contact, g, probable_next_conditions.center_of_mass);

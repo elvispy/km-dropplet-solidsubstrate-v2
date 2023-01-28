@@ -105,8 +105,10 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     my_tol = 1e-2; is_it_acceptable = false; 
     if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol ...
        && abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
-       && error < my_tol^2
-        is_it_acceptable = true;
+       && error < my_tol^2 
+        if ~(norm(probable_next_conditions.pressure_amplitudes) > 0 && new_contact_radius < 1e-6)
+            is_it_acceptable = true;
+        end
     end
     
 end
@@ -161,11 +163,11 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
         end
     end
     % Penalizing places with too little pressure
-    if sum(zs_evaluated < PROBLEM_CONSTANTS.spatial_tol)/N >= 0.995
+    if sum(zs_evaluated < 0.0*PROBLEM_CONSTANTS.spatial_tol)/N >= 0.995
         warning("Must make contact angle bigger!");
     end
     idx = N;
-    while zs_evaluated(idx) <= PROBLEM_CONSTANTS.spatial_tol && idx > 1
+    while zs_evaluated(idx) <= 0.0 * PROBLEM_CONSTANTS.spatial_tol && idx > 1
         idx = idx - 1;
     end
     

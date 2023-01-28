@@ -5,7 +5,8 @@ function plot_condition(idx, conditions, varargin)
     else
         set(gcf, 'Position', [0   159 760 586]);
     end
-    clf; hold on;  
+    clf;
+    hold on;  
     cut = 0.75 * pi;
     sample = [linspace(0, cut, 50), linspace(cut, pi, 50)];
     arrX = sin(sample);
@@ -13,8 +14,8 @@ function plot_condition(idx, conditions, varargin)
     etas = zeta_generator(conditions);
     if isstruct(conditions)
         height = conditions.center_of_mass;
-        plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'b--', 'LineWidth', 4);
-        yline(1e-4, 'y', 'LineWidth', 2);
+        plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'b', 'LineWidth', 2);
+        %yline(, 'y', 'LineWidth', 2);
     else
         height = 1 + sum(arrayfun(@(idx) (-1)^idx * conditions(idx), 2:length(conditions)));
     end
@@ -63,6 +64,11 @@ function plot_condition(idx, conditions, varargin)
             conditions.contact_radius, ss.contact_radius, ss.iteration);
         title(s, 'FontSize', 14);
         legend("Contact Radius");
+        %x = xlim;
+        y = ylim;
+        y = y(2) - (y(2) - y(1))/10;
+        x = 0;
+        text(x, y, sprintf("v_{cm} = %.3g", conditions.center_of_mass_velocity), 'FontSize', 14);
         %pause(0);
     elseif nargin >= 3
         

@@ -1,11 +1,11 @@
 N = 20;
 IDX = 15;
 M = 200;
-dt = 1e-3;
+dt = 1e-5;
 initial_deformation = zeros(1, N);
 initial_velocities  = ones(1, N);
 
-f = @(n)  sqrt(n .* (n+2) .* (n-1) / 100);
+f = @(n)  sqrt(n .* (n+2) .* (n-1) / 1);
 omegas_frequencies = f(1:N)';
 PROBLEM_CONSTANTS = struct("omegas_frequencies", omegas_frequencies);
 
