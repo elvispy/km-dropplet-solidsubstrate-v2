@@ -38,7 +38,14 @@ function plot_condition(idx, conditions, varargin)
         ps = @(ang) zps(ang) - avg;
         mps = ps(sample);
         mps(5) = 1;
-        quiver(EtaX, EtaY, mps .* (-arrX), mps .* (-arrY));  
+        quiver(EtaX, EtaY, mps .* (-arrX), mps .* (-arrY)); 
+        
+        if idx ~= 1
+            angle_tol = pi*2/conditions.nb_harmonics;
+            cm = conditions.center_of_mass;
+            plot([0, sin(pi+angle_tol)], [cm, cos(pi+angle_tol)], 'b','LineWidth',0.3);
+            plot([0, sin(pi-angle_tol)], [cm, cos(pi-angle_tol)], 'b','LineWidth',0.3);
+        end
     end
     
     if nargin > 2 && isstruct(conditions)
@@ -64,11 +71,12 @@ function plot_condition(idx, conditions, varargin)
             conditions.contact_radius, ss.contact_radius, ss.iteration);
         title(s, 'FontSize', 14);
         legend("Contact Radius");
-        %x = xlim;
+        x = xlim;
         y = ylim;
         y = y(2) - (y(2) - y(1))/10;
-        x = 0;
-        text(x, y, sprintf("v_{cm} = %.3g", conditions.center_of_mass_velocity), 'FontSize', 14);
+        x = x(1) + (x(2) - x(1))/10;
+        text(x, y, sprintf("v_{cm} = %.7g", conditions.center_of_mass_velocity), 'FontSize', 14);
+        text(x, y - y/10, sprintf("z_{cm} = %.7g", conditions.center_of_mass), 'FontSize', 14);
         %pause(0);
     elseif nargin >= 3
         

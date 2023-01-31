@@ -21,12 +21,12 @@ function solve_motion_v2()
     g = 9.8065e+2;%%%          % Gravitational constant
     harmonics_qtt = 200;      % Number of harmonics to be used 
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
-    max_dt = 1e-4;         % maximum allowed temporal time step
+    max_dt = 1e-5;         % maximum allowed temporal time step
     min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
-    spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
-    angle_tol =  pi * 1/180;
-    simulation_time = 2.0;% Maximum allowed time
-    live_plotting = true;     % Whether to plot or not the live results
+    spatial_tol = 1e-6;    % Tolerance to accept that dropplet touches the substrate
+    angle_tol =  pi * 2/harmonics_qtt;
+    simulation_time = 2.0; % Maximum allowed time
+    live_plotting = true; % Whether to plot or not the live results
 
     % Dimensionless Units
     length_unit = undisturbed_radius;
@@ -177,11 +177,12 @@ function solve_motion_v2()
     indexes_to_save = zeros(maximum_index, 1); indexes_to_save(1) = 1;
     current_to_save = 2;
     % p = parpool(5);
-    while ( current_time < final_time)
+    while ( current_time < final_time) && current_index < 50
         % First, we try to solve with the same number of contact points
         [current_conditions, errortan] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
             
-        if abs(errortan) > tan_tol
+        if abs(current_conditions.contact_radius-previous_conditions{end}.contact_radius) > ...
+                r_from_spherical(2 * angle_tol, current_conditions) %abs(errortan) > tan_tol
             dt = dt/2;
             disp("Se dividio dt por 2");
             % Refine time step in index notation 
