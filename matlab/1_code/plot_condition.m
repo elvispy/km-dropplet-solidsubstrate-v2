@@ -14,7 +14,7 @@ function plot_condition(idx, conditions, varargin)
     etas = zeta_generator(conditions);
     if isstruct(conditions)
         height = conditions.center_of_mass;
-        plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'b', 'LineWidth', 2);
+        plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'g--', 'LineWidth', 3);
         %yline(, 'y', 'LineWidth', 2);
     else
         height = 1 + sum(arrayfun(@(idx) (-1)^idx * conditions(idx), 2:length(conditions)));
@@ -49,7 +49,7 @@ function plot_condition(idx, conditions, varargin)
     end
     
     if nargin > 2 && isstruct(conditions)
-        x = 0.1 + conditions.contact_radius;
+        x = 0.15 + floor(3*conditions.contact_radius)/3; % 0.1 + conditions.contact_radius;
     else
         x = 0.05;
     end
@@ -78,7 +78,7 @@ function plot_condition(idx, conditions, varargin)
         text(x, y, sprintf("v_{cm} = %.7g", conditions.center_of_mass_velocity), 'FontSize', 14);
         text(x, y - y/10, sprintf("z_{cm} = %.7g", conditions.center_of_mass), 'FontSize', 14);
         %pause(0);
-    elseif nargin >= 3
+    elseif nargin >= 4
         
         title(varargin{2}, 'FontSize', 14);
         drawnow limitrate;

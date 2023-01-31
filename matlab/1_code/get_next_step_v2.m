@@ -1,8 +1,8 @@
-function [probable_next_conditions, errortan] = ...
+function [probable_next_conditions, errorflag] = ...
     get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS)
 
     % Assume the tangency error is zero unless you find something wrong
-    errortan = 0;
+    errorflag = false;
     %spatial_tol = PROBLEM_CONSTANTS.spatial_tol;
     %angle_tol   = PROBLEM_CONSTANTS.angle_tol;
     % Lets try with the same pressure
@@ -18,7 +18,7 @@ function [probable_next_conditions, errortan] = ...
         
         if error == 0
             probable_next_conditions = no_pressure_conditions;
-            errortan = error;
+            errorflag = false;
             return
         end
     end
@@ -47,24 +47,29 @@ function [probable_next_conditions, errortan] = ...
             update_pressure_guess(probable_next_conditions, ...
                 previous_conditions, PROBLEM_CONSTANTS);
     end
-    if idx == 100; probable_next_conditions = best_condition; end
+    if idx == 50; probable_next_conditions = best_condition; errorflag = true; end
     
     r_max = maximum_contact_radius(probable_next_conditions);
     %zeta = zeta_generator(probable_next_conditions);
     %z = @(theta) probable_next_conditions.center_of_mass +  cos(theta) .* (1 + zeta(theta));
     if r_max < probable_next_conditions.contact_radius || isnan(r_max)
-        errortan = Inf;
+        errorflag = true;
         warning("Maximum contact radius passed!")
         return
     end
     
-    if probable_next_conditions.contact_radius > 0
-        % rmax = maximum_contact_radius(probable_next_conditions); % dr * (probable_next_conditions.number_contact_points - 1/2); %% TODO FIX THIS
-        errortan = calculate_exit_angle(probable_next_conditions, ...
-            theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions));
-    elseif probable_next_conditions.contact_radius > r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions)
+    if probable_next_conditions.contact_radius < 1e-6 && norm(probable_next_conditions.pressure_amplitudes) > 10
+        errorflag = true;
+    end
+    
+%     if probable_next_conditions.contact_radius > 0
+%         % rmax = maximum_contact_radius(probable_next_conditions); % dr * (probable_next_conditions.number_contact_points - 1/2); %% TODO FIX THIS
+%         % errorflag = (abs(best_condition.pressure_deformation(1)) > 1e+4);
+%     else
+    if abs(theta_from_cylindrical( probable_next_conditions.contact_radius, probable_next_conditions)...
+           - theta_from_cylindrical(previous_conditions{end}.contact_radius, previous_conditions{end})) > PROBLEM_CONSTANTS.angle_tol
         % If angle step is too big, we must make dt smaller
-        errortan = inf;
+        errorflag = true;
     end
                 
 %         % Check that dropplet does not intersect with the substrate
@@ -74,7 +79,7 @@ function [probable_next_conditions, errortan] = ...
 %                 break;
 %             end
 %         end
-    if errortan < 0; disp("Errortan <= 0 ? "); end
+    
 end % end main function definition
 
 
@@ -105,7 +110,7 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     new_contact_radius);
 
     % Now let's check if convergence was attained
-    my_tol = 1e-2; is_it_acceptable = false; 
+    my_tol = 1e-4; is_it_acceptable = false; 
     if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol ... %&& abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
        && error < my_tol
         sp = zeta_generator(probable_next_conditions);
