@@ -21,9 +21,9 @@ function solve_motion_v2()
     g = 9.8065e+2;%%%          % Gravitational constant
     harmonics_qtt = 250;      % Number of harmonics to be used 
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
-    max_dt = 0.05 * 1e-3;         % maximum allowed temporal time step
-    min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
-    spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
+    max_dt = 0.1 * 1e-3;         % maximum allowed temporal time step
+    % min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
+    spatial_tol = 3e-3;    % Tolerance to accept that dropplet touches the substrate
     angle_tol =  pi * 2/harmonics_qtt;
     simulation_time = 2.0e-3; % Maximum allowed time
     live_plotting = true; % Whether to plot or not the live results
@@ -63,7 +63,7 @@ function solve_motion_v2()
         amplitudes_velocities = amplitudes_velocities/velocity_unit;
     end
 
-    tan_tol = tan(min_angle);
+    % tan_tol = tan(min_angle);
 
     initial_pressure_coefficients = zeros(1, harmonics_qtt) / pressure_unit; % Just to emphasize the units of these coefficients.
 
