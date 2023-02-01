@@ -59,6 +59,7 @@ function [probable_next_conditions, errorflag] = ...
     end
     
     if probable_next_conditions.contact_radius < 1e-6 && norm(probable_next_conditions.pressure_amplitudes) > 10
+        
         errorflag = true;
     end
     
@@ -181,7 +182,7 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
     
     % Penalizing places where there is pressure but no contact
 %     Ps = zeta_generator(probable_pressures);
-%     ps_evaluated = abs(Ps(thetas) - sum(probable_pressures));
+%     ps_evaluated = abs(Ps(thetas) - mean(Ps(linspace(0, pi/10)))); %sum(probable_pressures));
 %     ps_evaluated = (ps_evaluated+eps)/(max(ps_evaluated)+eps); % Normalizing pressure
 %     
 %     if  sum(ps_evaluated > 0.01)/N > 0.995 && norm(probable_pressures) > 0
@@ -190,9 +191,9 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
 %     if min(ps_evaluated) > 1/20 % If the ratio min/max (max = 1) is too big, means that there may be no contact.
 %         idx2 = N;
 %     else
-%         idx2 = 1;
-%         while ps_evaluated(idx) < 0.2 && idx2 < N
-%             idx2 = idx2 + 1;
+%         idx2 = N;
+%         while ps_evaluated(idx) > 0.2 && idx2 > 1
+%             idx2 = idx2 - 1;
 %         end
 %     end
     idx2 = N;
