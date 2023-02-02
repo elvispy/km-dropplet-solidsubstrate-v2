@@ -51,7 +51,7 @@ function angle = theta_from_cylindrical(r, A_l)
             theta = mod(theta - f_objective(theta)/f_prime(theta) - 1e-4, pi/2) + 1e-4 + pi/2; % If solution is close to pi, theta is unstable with mod function (therefore 1e-4 added)
             n = n + 1;
             if n == 50
-                theta = 3.14159;
+                theta = 3.141592653589793;
             elseif n == 100
                 theta = rand() * pi/2 + pi/2;
             end
