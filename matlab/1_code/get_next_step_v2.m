@@ -111,9 +111,8 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     new_contact_radius);
 
     % Now let's check if convergence was attained
-    my_tol = 0.001; is_it_acceptable = false; 
-    if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol ... %&& abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
-       && error < my_tol
+    my_tol = 0.0001; is_it_acceptable = false; 
+    if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol %&& abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
         sp = zeta_generator(probable_next_conditions);
         if ~(probable_next_conditions.center_of_mass - (1 + sp(pi)) > PROBLEM_CONSTANTS.spatial_tol ...
                 && new_contact_radius < 1e-6)

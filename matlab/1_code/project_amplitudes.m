@@ -1,24 +1,34 @@
 function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTANTS, flag) % PROBLEM CONSTANTS used to be here 
-    %flag = true;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% project_amplitudes.m - Projects function onto legendre polynomials
+%
+% Calculates the nth amplitude coefficient of function ff, where n <=
+% harmonics_qtt. Note that the zeroth mode is not calculated.
+% THe following formula applies
+% coefs(n) = (2n+1)/2 \int_{0}^{pi} ff(w) * sin(w) * P_l(cos(w)) dw
+% where Pl is the l-th legendre Polynomial. (see
+% https://en.wikipedia.org/wiki/Legendre_polynomials#Rodrigues'_formula_and_other_explicit_formulas) 
+
+% Arguments:
+% - ff: Function handle that is going to be projected.
+% - harmonics_qtt: number of harmonics to project the function to
+% - endpoints: The function may be set to zero outside of the endpoints
+% - PROBLEM_CONSTANTS: Struct that has a field with the precomputed weights
+% for the Curtis-Clensahw Quadrature.
+% - flag: Boolean that flags whether to use Curtis-CLenshaw. If set to
+% false, it uses Curtis Clenshaw.
+%
+% Outputs:
+% - coefs: Array of coefficients that correspond to the amplitudes.
+
+% EXAMPLES
+%
+% Written by: Elvis Aguero- 02/01/2023
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     if flag
-%         f = @(theta, idx) my_legendre(idx, cos(theta)) .* ff(theta) .* sin(theta);
-%         try
-%             f([0 1], 3);
-%         catch
-%             f = @(theta, idx) my_legendre(idx, cos(theta))' .* ff(theta) .* sin(theta);
-%         end
-            
-%         if length(endpoints) > 2   % Endpoints may have a third argument, the place where a discontinuity happens.          
-% %             coefs = arrayfun(@(idx) ...
-% %                 (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-% %                 'RelTol', 1e-4, 'AbsTol', 1e-5, 'Waypoints', endpoints(3)), 1:harmonics_qtt);
-%             coefs = ((1:harmonics_qtt) + 0.5)' .* ...
-%                 integral(@(theta) (ff(theta) .* sin(theta)) .* collectPl(harmonics_qtt, cos(theta)), ...
-%                     endpoints(1), endpoints(2), 'RelTol', 1e-4, 'AbsTol', 1e-5, 'ArrayValued', 1);
-%         else
-            %coefs = arrayfun(@(idx) ...
-            %    (2 * idx + 1)/2 * integral(@(theta) f(theta, idx), endpoints(1), endpoints(2), ...
-            %    'RelTol', 1e-4, 'AbsTol', 1e-5), 1:harmonics_qtt);
+
             coefs = ((1:harmonics_qtt) + 0.5)' .* ...
                 integral(@(theta) (ff(theta) .* sin(theta)) .* collectPl(harmonics_qtt, cos(theta)), ...
                     endpoints(1), endpoints(2), 'RelTol', 1e-5, 'AbsTol', 1e-5, 'ArrayValued', 1);
