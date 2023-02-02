@@ -118,6 +118,11 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
                 d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 * dt * D * d^2;
                 CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 CM = (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
+           case 9
+                % Integration of pressure on whole surface (disregarding B0)
+                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - probable_next_conditions.pressure_amplitudes(1);
+                CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
+                CM = (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
         end % end switch statement
     end
     

@@ -19,13 +19,13 @@ function solve_motion_v2()
     rhoS = 0.998;%%%%            % Sphere's density
     sigmaS = 72.20;%%%%%          % Sphere's Surface Tension
     g = 9.8065e+2;%%%          % Gravitational constant
-    harmonics_qtt = 200;      % Number of harmonics to be used 
+    harmonics_qtt = 250;      % Number of harmonics to be used 
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
-    max_dt = 1e-5;         % maximum allowed temporal time step
-    min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
-    spatial_tol = 1e-6;    % Tolerance to accept that dropplet touches the substrate
+    max_dt = 0.01 * 1e-3;         % maximum allowed temporal time step
+    % min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
+    spatial_tol = 5e-4;    % Tolerance to accept that dropplet touches the substrate
     angle_tol =  pi * 2/harmonics_qtt;
-    simulation_time = 2.0; % Maximum allowed time
+    simulation_time = 2.0e-3; % Maximum allowed time
     live_plotting = true; % Whether to plot or not the live results
 
     % Dimensionless Units
@@ -36,7 +36,7 @@ function solve_motion_v2()
     froude_nb   = initial_velocity.^2/(g*undisturbed_radius);
     weber_nb    = rhoS * undisturbed_radius * initial_velocity.^2 / sigmaS; % Weber's number of the dropplet
     % reynolds_nb = undisturbed_radius * velocity_unit / nu; % Reynolds' number
-    mS = 4*pi*undisturbed_radius^3 * rhoS / 3;
+    % mS = 4*pi*undisturbed_radius^3 * rhoS / 3;
     mass_unit = rhoS * length_unit^3;
     
     % % Initial conditions
@@ -55,7 +55,7 @@ function solve_motion_v2()
         initial_height = initial_height/length_unit;
     end
     
-    initial_velocity = initial_velocity/velocity_unit;
+    initial_velocity_adim = initial_velocity/velocity_unit;
 
     if length(amplitudes_velocities) ~= harmonics_qtt
         amplitudes_velocities = zeros(1, harmonics_qtt);
@@ -63,7 +63,7 @@ function solve_motion_v2()
         amplitudes_velocities = amplitudes_velocities/velocity_unit;
     end
 
-    tan_tol = tan(min_angle);
+    % tan_tol = tan(min_angle);
 
     initial_pressure_coefficients = zeros(1, harmonics_qtt) / pressure_unit; % Just to emphasize the units of these coefficients.
 
@@ -75,7 +75,7 @@ function solve_motion_v2()
     
     % Setting dr
     if isnan(nb_pressure_samples)
-        f = @(t) -t^2/(2 * froude_nb) + initial_velocity * t + initial_height;
+        f = @(t) -t^2/(2 * froude_nb) + initial_velocity_adim * t + initial_height;
         spatial_step = sqrt(f(0)^2 - f(dt)^2)/2;
         %spatial_step = 1/harmonics_qtt;
     else
@@ -120,9 +120,9 @@ function solve_motion_v2()
         "spatial_tol", spatial_tol, ...
         "angle_tol", angle_tol, ...
         "pressure_unit", pressure_unit, ...
-        "CM", 7, ...
+        "CM", 9, ...
         "PG", 2, ...
-        "KILL_OUTSIDE", false, ...
+        "KILL_OUTSIDE", true, ...
         "wigner3j", {precomputed_wigner(harmonics_qtt)}, ...
         "DEBUG_FLAG", true);
 
@@ -135,7 +135,7 @@ function solve_motion_v2()
         current_time, ...
         dt, ...
         initial_height, ...
-        initial_velocity, initial_contact_radius); % Last argument is contact radius
+        initial_velocity_adim, initial_contact_radius); % Last argument is contact radius
  
     previous_conditions = {current_conditions, current_conditions}; 
     % TODO: Define this array properly to implement BDF2.
@@ -177,12 +177,12 @@ function solve_motion_v2()
     indexes_to_save = zeros(maximum_index, 1); indexes_to_save(1) = 1;
     current_to_save = 2;
     % p = parpool(5);
-    while ( current_time < final_time) && current_index < 50
+    while ( current_time < final_time) 
         % First, we try to solve with the same number of contact points
-        [current_conditions, errortan] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
+        [current_conditions, errorflag] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
             
         if abs(current_conditions.contact_radius-previous_conditions{end}.contact_radius) > ...
-                r_from_spherical(2 * angle_tol, current_conditions) %abs(errortan) > tan_tol
+                r_from_spherical(2 * angle_tol, current_conditions) || errorflag == true %abs(errortan) > tan_tol
             dt = dt/2;
             disp("Se dividio dt por 2");
             % Refine time step in index notation 
@@ -192,7 +192,7 @@ function solve_motion_v2()
             
             current_time = current_time + dt; jjj = jjj + 1;
             if mod(jjj, 2) == 0 && grow_dt == true
-                jjj = div(jjj, 2); 
+                jjj = floor(jjj/2); 
                 iii = iii - 1;
                 % Increase time step
                 dt = 2 * dt;
@@ -223,7 +223,7 @@ function solve_motion_v2()
                    1e+3 * current_time * time_unit, current_conditions.contact_radius, ...
                         current_conditions.center_of_mass_velocity * velocity_unit, ...
                         current_conditions.center_of_mass* length_unit);
-                plot_condition(1, current_conditions, 10, plot_title);
+                plot_condition(1, current_conditions, 5, plot_title);
 
             else
                 % Do some real-time variable updating here
@@ -236,7 +236,7 @@ function solve_motion_v2()
     % Post processing
     indexes_to_save = indexes_to_save(1:(current_to_save-1));
     recorded_conditions = recorded_conditions(indexes_to_save);
-    save('simulation.mat', 'recorded_conditions');
+    save('simulation.mat', 'recorded_conditions', 'length_unit', 'velocity_unit', 'pressure_unit', 'froude_nb', 'weber_nb');
 
  
     
