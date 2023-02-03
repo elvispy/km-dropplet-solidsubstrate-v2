@@ -37,6 +37,7 @@ function [unkn, vel] = solve_ODE_unkown(deformation, pressures, dt, previous_con
     else
         unkn = -result./(dt * (1:nb_harmonics)');
         vel = nan;
+        unkn(1) = 0;
     end
     if size(unkn, 1) > 1; unkn = unkn'; end
     if size(vel,  1) > 1; vel  = vel';  end

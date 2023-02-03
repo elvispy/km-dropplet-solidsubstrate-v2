@@ -1,4 +1,4 @@
-function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTANTS, flag) % PROBLEM CONSTANTS used to be here 
+function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTANTS, flag) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % project_amplitudes.m - Projects function onto legendre polynomials
 %

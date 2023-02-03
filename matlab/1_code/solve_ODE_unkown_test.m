@@ -1,3 +1,4 @@
+%% Test when there is no Pressure
 N = 20;
 IDX = 15;
 M = 200;
@@ -9,7 +10,7 @@ f = @(n)  sqrt(n .* (n+2) .* (n-1) / 1);
 omegas_frequencies = f(1:N)';
 PROBLEM_CONSTANTS = struct("omegas_frequencies", omegas_frequencies);
 
-g = @(t, idx) initial_deformation(idx) * cos(f(idx) * t) + initial_velocities(idx)/(f(idx)+1e-30) * sin(f(idx) * t); 
+g = @(t, idx) initial_deformation(idx) * cos(f(idx) * t) + initial_velocities(idx)/(f(idx)+1e-30) * sin(f(idx) * t);
 
 initial_condition = struct("dt", dt, "nb_harmonics", N, ...
     "deformation_velocities", initial_velocities, "deformation_amplitudes", initial_deformation);
@@ -25,12 +26,12 @@ conditions = cell(M, 1); conditions{1} = initial_condition;
 
 for ii = 2:M
     [def, vel] = solve_ODE_unkown(nan, zeros(1, N), dt, previous_conditions, PROBLEM_CONSTANTS);
-   
+    
     new_conditions = struct("dt", dt, "nb_harmonics", N, ...
-     "deformation_velocities", vel, "deformation_amplitudes", def);
-
+        "deformation_velocities", vel, "deformation_amplitudes", def);
+    
     previous_conditions = {previous_conditions{end} new_conditions};
-    conditions{ii} = new_conditions; 
+    conditions{ii} = new_conditions;
 end
 
 
@@ -49,8 +50,6 @@ hold on;
 plot(t, real, 'b');
 legend(["Numerical" "Analytic"]);
 title(sprintf("Amplitude %d", IDX));
-
-
 %% Test that solve_ODE is an idempotent operator.
 
 A = rand(1, N);
