@@ -21,7 +21,7 @@ function solve_motion_v2()
     g = 9.8065e+2;%%%          % Gravitational constant
     harmonics_qtt = 250;      % Number of harmonics to be used 
     nb_pressure_samples = nan;      % Number of intervals in contact radius (NaN = Equal to number of harmonics)
-    max_dt = 1 * 1e-3;         % maximum allowed temporal time step
+    max_dt = 0.01 * 1e-3;         % maximum allowed temporal time step
     % min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
     spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
     angle_tol =  pi * 2/harmonics_qtt;
@@ -155,6 +155,7 @@ function solve_motion_v2()
 
    % % Preparing post-processing
    % TODO: Write post processing variables
+
    %  Preallocate variables that will be exported (All of them have units!)
    recorded_conditions =cell(maximum_index, 1); % Vector{ProblemConditions}(undef, (maximum_index, )); 
    give_dimensions_v2 = @(X) ProblemConditions_v2( ...
@@ -181,8 +182,8 @@ function solve_motion_v2()
         % First, we try to solve with the same number of contact points
         [current_conditions, errorflag] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
             
-        if errorflag == true || abs(current_conditions.contact_radius-previous_conditions{end}.contact_radius) > ...
-                r_from_spherical(2 * angle_tol, current_conditions) % || errorflag == true %abs(errortan) > tan_tol
+        if errorflag == true || abs(theta_from_cylindrical( current_conditions.contact_radius, current_conditions)...
+           - theta_from_cylindrical(current_conditions.contact_radius, current_conditions)) > 2*PROBLEM_CONSTANTS.angle_tol
             dt = dt/2;
             disp("Se dividio dt por 2");
             % Refine time step in index notation 

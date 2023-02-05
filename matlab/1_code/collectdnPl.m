@@ -1,12 +1,12 @@
 function y = collectdnPl(nmax, x, varargin) % TODO: Change to cell of function handles created on compile time. It is more efficient
-
+    if max(abs(x)) > 1; error("Input values must be between -1 and 1. Got %.5g", max(abs(x))); end
     if nargin == 2 || varargin{1} == 1
         % THe following reucrrence relation may be derived from the
         % original legendre polynomial's recurrence relation:
          % n P'_{n+1}(x) = (2n+1) * x *P'_n(x) - (n+1)* P'_{n-1}(x)
         y = ones(nmax, length(x));
         if nmax >= 2
-            y(2, :) = legendre_dx(2, x);
+            y(2, :) = 3*x; % legendre_dx(2, x);
         end
         
         for idx = 2:(nmax-1)
@@ -19,7 +19,7 @@ function y = collectdnPl(nmax, x, varargin) % TODO: Change to cell of function h
         % DEP : v = collectdnPl(nmax, x);
         y = zeros(nmax, length(x));
         if nmax >=2; y(2, :) = 3; end
-        if nmax >=3; y(3, :) = legendre_ddx(3, x); end
+        if nmax >=3; y(3, :) = 15*x; end% legendre_ddx(3, x); end
         for idx = 3:(nmax-1)
            y(idx + 1, :) = (2*idx+1)/(idx-1) * x .* y(idx, :) - (idx + 2)/(idx - 1) * y(idx-1, :);
         end

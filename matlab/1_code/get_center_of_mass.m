@@ -1,4 +1,4 @@
-function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, ...
+function [CM, CM_velocity, inst_force] = get_center_of_mass(new_amplitudes, new_velocities, ...
     probable_next_conditions, previous_conditions, PROBLEM_CONSTANTS)
     
     dt = probable_next_conditions.dt;
@@ -19,6 +19,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
     if norm(probable_next_conditions.pressure_amplitudes) == 0
         CM_velocity = (-dt/PROBLEM_CONSTANTS.froude_nb - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
         CM= (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);    
+        inst_force = inf;
     else
         switch PROBLEM_CONSTANTS.CM
             case 1 
@@ -81,7 +82,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
                 avg = mean(z(linspace(0, pi/10)));
                 pb = @(x) (sum(probable_next_conditions.pressure_amplitudes' .* collectPl(probable_next_conditions.nb_harmonics, x), 1) - avg) ./ x.^3;
                 endpoints = [-1, cos(theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions))];
-                D = integral(pb , endpoints(1), endpoints(2), 'RelTol', 1e-4);
+                D = integral(pb , endpoints(1), endpoints(2), 'RelTol', 1e-5);
                 A = 3*D*dt/2;
                 B = coefs(end)^2/dt;
 
@@ -103,7 +104,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
                 endpoints = [-1, cos(theta_from_cylindrical(probable_next_conditions.contact_radius, probable_next_conditions))];
                 D = integral(pb , endpoints(1), endpoints(2), 'RelTol', 1e-4);
                 d = 1 + sum(arrayfun(@(idx) (-1)^idx * new_amplitudes(idx), 2:nb_harmonics));
-                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 * dt * D * d^2;
+                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 * D * d^2;
                 CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 CM = (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
             case 8 
@@ -115,7 +116,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
                 pb_cylindrical = @(r) pb(arrayfun(@(rs) theta_from_cylindrical(rs, probable_next_conditions), r)) .* r;
                 new_contact_radius = probable_next_conditions.contact_radius;
                 D = integral(pb_cylindrical, 0, new_contact_radius, 'RelTol', 1e-4);
-                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 * dt * D * d^2;
+                d2zd2t = -1/PROBLEM_CONSTANTS.froude_nb - 3/2 * D * d^2;
                 CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 CM = (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
            case 9
@@ -124,6 +125,7 @@ function [CM, CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, 
                 CM_velocity  = (dt * d2zd2t - sum(coefs(1:n) .* extract_symbol('center_of_mass_velocity')))/coefs(end);
                 CM = (dt * CM_velocity -  sum(coefs(1:n) .* extract_symbol('center_of_mass')))/coefs(end);
         end % end switch statement
+        inst_force = 4*pi/3 * (d2zd2t + 1/PROBLEM_CONSTANTS.froude_nb);
     end
     
     

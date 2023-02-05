@@ -52,27 +52,29 @@ function [probable_next_conditions, errorflag] = ...
     r_max = maximum_contact_radius(probable_next_conditions);
     %zeta = zeta_generator(probable_next_conditions);
     %z = @(theta) probable_next_conditions.center_of_mass +  cos(theta) .* (1 + zeta(theta));
-    if r_max < probable_next_conditions.contact_radius || isnan(r_max)
+    if r_max < probable_next_conditions.contact_radius
         errorflag = true;
         warning("Maximum contact radius passed!")
         return
     end
     
-    if probable_next_conditions.contact_radius < 1e-6 && norm(probable_next_conditions.pressure_amplitudes) > 10
-        
-        errorflag = true;
+    % If there is no contact radius but there is pressure
+    if probable_next_conditions.contact_radius < 1e-6 
+        z = zeta_generator(probable_next_conditions.pressure_amplitudes);
+        if sum(z(linspace(0.9*pi, pi))) - sum(z(linspace(0, pi/10))) > 10
+            errorflag = true;
+        end
     end
     
 %     if probable_next_conditions.contact_radius > 0
 %         % rmax = maximum_contact_radius(probable_next_conditions); % dr * (probable_next_conditions.number_contact_points - 1/2); %% TODO FIX THIS
 %         % errorflag = (abs(best_condition.pressure_deformation(1)) > 1e+4);
 %     else
-    if abs(theta_from_cylindrical( probable_next_conditions.contact_radius, probable_next_conditions)...
-           - theta_from_cylindrical(previous_conditions{end}.contact_radius, previous_conditions{end})) > PROBLEM_CONSTANTS.angle_tol
-        % If angle step is too big, we must make dt smaller
-        errorflag = true;
-    end
-                
+%     if abs(theta_from_cylindrical( probable_next_conditions.contact_radius, probable_next_conditions)...
+%            - theta_from_cylindrical(previous_conditions{end}.contact_radius, previous_conditions{end})) > PROBLEM_CONSTANTS.angle_tol
+%         % If angle step is too big, we must make dt smaller
+%         errorflag = true;
+%     end       
 %         % Check that dropplet does not intersect with the substrate
 %         for r_i = (dr * probable_next_conditions.number_contact_points):(dr/100):r_max
 %             if z(theta_from_cylindrical(r_i, probable_next_conditions)) < -spatial_tol || isnan(r_i)
@@ -111,14 +113,19 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     new_contact_radius);
 
     % Now let's check if convergence was attained
-    my_tol = 0.0001; is_it_acceptable = false; 
-    if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol %&& abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
-        sp = zeta_generator(probable_next_conditions);
-        if ~(probable_next_conditions.center_of_mass - (1 + sp(pi)) > PROBLEM_CONSTANTS.spatial_tol ...
-                && new_contact_radius < 1e-6)
-            is_it_acceptable = true;
-        end
+    my_tol = 1e-4;
+    if error < my_tol && abs(pressure_angle(new_probable_next_conditions, new_centerofmass, PROBLEM_CONSTANTS) ...
+            - theta_from_cylindrical(new_contact_radius, new_probable_next_conditions)) < PROBLEM_CONSTANTS.angle_tol 
+        is_it_acceptable = true;
     end
+%     my_tol = 0.0001; is_it_acceptable = false; 
+%     if norm(new_amplitudes - probable_next_conditions.deformation_amplitudes) < my_tol %&& abs(new_contact_radius - probable_next_conditions.contact_radius) < my_tol ...%r_from_spherical(PROBLEM_CONSTANTS.angle_tol, probable_next_conditions) ...
+%         sp = zeta_generator(probable_next_conditions);
+%         if ~(probable_next_conditions.center_of_mass - (1 + sp(pi)) > PROBLEM_CONSTANTS.spatial_tol ...
+%                 && new_contact_radius < 1e-6)
+%             is_it_acceptable = true;
+%         end
+%     end
 end % end advance conditioins definition
 
 
@@ -213,22 +220,37 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
         
 end
 
+function r = pressure_angle(probalbe_next_conditions, inst_force, PROBLEM_CONSTANTS)
+%     pressure_amplitudes_tentative = [probable_next_conditions.pressure_amplitudes, 0];
+%     Cl = @(l)  l * (l-1) / (2*l-1)     * pressure_amplitudes_tentative(l-1);
+%     Dl = @(l)  (l+2) * (l+1) / (2*l+3) * pressure_amplitudes_tentative(l+1);
+%     pressure_amplitudes_tentative = pressure_amplitudes_tentative(1:(end-1));
+% 
+%     inst_force = - pressure_amplitudes_tentative(1);%- sum(coefs(1:n) .* extract_symbol("center_of_mass_velocity"), 1:n));
+% 
+%     for hb = 2:nb_harmonics
+%         inst_force = inst_force + 3 * (new_amplitudes(hb) / (2*hb+1)) * (Cl(hb) - Dl(hb));  % THIS IS WRONG IF THE FIRST PRESSURE COEFFICIENT IS DISREGARDED
+%     end
+%     
+%     inst_force = 4*pi/3 * inst_force; % We take out the dimensionless mass
 
+
+end
 
 
 %Calculates the exit angle at the contact angle theta
-
-function exit_angle = calculate_exit_angle(amplitudes, angle)
-    if isstruct(amplitudes); amplitudes = amplitudes.deformation_amplitudes; end
-    
-    zeta = zeta_generator(amplitudes);
-    if size(amplitudes, 2) > 1; amplitudes = amplitudes'; end
-    der = @(theta) sum(amplitudes .* collectdnPl(length(amplitudes), cos(theta)), 1);
-
-    dzdr = @(theta)  (-sin(theta) .* (1 + zeta(theta)) - cos(theta) .* sin(theta) .* der(theta)) ./ ...
-        (cos(theta) .* (1 + zeta(theta)) - sin(theta).^2 .* der(theta));
-        
-    exit_angle =  dzdr(angle);
-end
+% 
+% function exit_angle = calculate_exit_angle(amplitudes, angle)
+%     if isstruct(amplitudes); amplitudes = amplitudes.deformation_amplitudes; end
+%     
+%     zeta = zeta_generator(amplitudes);
+%     if size(amplitudes, 2) > 1; amplitudes = amplitudes'; end
+%     der = @(theta) sum(amplitudes .* collectdnPl(length(amplitudes), cos(theta)), 1);
+% 
+%     dzdr = @(theta)  (-sin(theta) .* (1 + zeta(theta)) - cos(theta) .* sin(theta) .* der(theta)) ./ ...
+%         (cos(theta) .* (1 + zeta(theta)) - sin(theta).^2 .* der(theta));
+%         
+%     exit_angle =  dzdr(angle);
+% end
 
 

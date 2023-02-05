@@ -41,9 +41,10 @@ function angle = theta_from_cylindrical(r, A_l)
     % Newton Method!
     for ii = 1:length(r)
         % Function to be minimized00
+        if r(ii) == 0; angle(ii) = pi; continue; end
         f_objective = @(theta) sin(theta) .* (1 + zeta(theta)) - r(ii);
 
-        if r <= 1; theta = pi - asin(r); else; theta = pi/2; end
+        if r(ii) <= 1; theta = pi - asin(r(ii)); else; theta = pi/2; end
         tol_theta = 1e-7;
         n = 1;
         
