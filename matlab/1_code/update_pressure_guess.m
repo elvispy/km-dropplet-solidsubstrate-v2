@@ -33,6 +33,19 @@ function new_probable_next_conditions = update_pressure_guess(probable_next_cond
             f = @(theta) f_generator(theta, theta_contact, g, probable_next_conditions.center_of_mass);
             amplitudes_modified = project_amplitudes(f, nb_harmonics, [0, pi, theta_contact], PROBLEM_CONSTANTS, true);
             amplitudes_modified(1) = 0;   
+
+        case 3
+            % Least squares on flat surface B(1) is ignored
+            
+            nb_harmonics = probable_next_conditions.nb_harmonics;
+            M = 2 * nb_harmonics;
+            thetas = logspace(log10(theta_contact), log10(pi), M); % linspace(theta_contact, pi, M);
+            LVAL = collectPl(nb_harmonics, cos(thetas));
+            LVAL = LVAL(2:end, :)';
+            b = -probable_next_conditions.center_of_mass./cos(thetas) - 1; b = b';
+            [amps, ~] = lsqr(LVAL, b, [], 100, [], [], probable_next_conditions.deformation_amplitudes(2:end)');
+            amplitudes_modified = [0, amps'];
+
     end
     
     pressure_guess = solve_ODE_unkown(amplitudes_modified, nan, probable_next_conditions.dt, previous_conditions, PROBLEM_CONSTANTS);

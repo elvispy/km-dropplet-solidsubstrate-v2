@@ -61,6 +61,7 @@ function [probable_next_conditions, errorflag] = ...
     % If there is no contact radius but there is pressure
     if probable_next_conditions.contact_radius < 1e-6 
         z = zeta_generator(probable_next_conditions.pressure_amplitudes);
+        % Check that pressure near the center is not zero.
         if sum(z(linspace(0.9*pi, pi))) - sum(z(linspace(0, pi/10))) > 10
             errorflag = true;
         end
@@ -95,7 +96,7 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     
     nb_harmonics = previous_conditions{end}.nb_harmonics;
     
-    [new_centerofmass, new_CM_velocity] = get_center_of_mass(new_amplitudes, new_velocities, ...
+    [new_centerofmass, new_CM_velocity, inst_force] = get_center_of_mass(new_amplitudes, new_velocities, ...
         probable_next_conditions, previous_conditions, PROBLEM_CONSTANTS);
 
     [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, new_centerofmass, ...
@@ -113,8 +114,8 @@ function [new_probable_next_conditions, is_it_acceptable, error] = advance_condi
     new_contact_radius);
 
     % Now let's check if convergence was attained
-    my_tol = 1e-4;
-    if error < my_tol && abs(pressure_angle(new_probable_next_conditions, new_centerofmass, PROBLEM_CONSTANTS) ...
+    my_tol = 1e-4; is_it_acceptable = 0;
+    if error < my_tol && abs(pressure_angle(new_probable_next_conditions, inst_force, PROBLEM_CONSTANTS.angle_tol) ...
             - theta_from_cylindrical(new_contact_radius, new_probable_next_conditions)) < PROBLEM_CONSTANTS.angle_tol 
         is_it_acceptable = true;
     end
@@ -178,11 +179,11 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
         end
     end
     % Penalizing places with too little pressure
-    if sum(zs_evaluated < 0.0*PROBLEM_CONSTANTS.spatial_tol)/N >= 0.995
+    if sum(zs_evaluated < 0.5 *PROBLEM_CONSTANTS.spatial_tol)/N >= 0.995
         warning("Must make contact angle bigger!");
     end
     idx = N;
-    while zs_evaluated(idx) <= 0.0 * PROBLEM_CONSTANTS.spatial_tol && idx > 1
+    while zs_evaluated(idx) <= 0.5 * PROBLEM_CONSTANTS.spatial_tol && idx > 1
         idx = idx - 1;
     end
     
@@ -208,7 +209,7 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
     new_contact_radius = r_from_spherical(thetas(min(idx, idx2)), new_amplitudes);
     %%-crp = r_from_spherical(theta_from_cylindrical(previous_contact_radius, new_amplitudes)-PROBLEM_CONSTANTS.angle_tol, new_amplitudes);
     %%-new_contact_radius = min(crp, new_contact_radius);
-    error = norm(zs_evaluated(min(idx, idx2):end));
+    error = norm(zs_evaluated(min(idx, idx2):end))/sqrt(N);
 
     if pi - thetas(idx) <= PROBLEM_CONSTANTS.angle_tol
         new_contact_radius = 0.0;
@@ -220,8 +221,8 @@ function [new_contact_radius, error] = calculate_contact_radius(new_amplitudes, 
         
 end
 
-function r = pressure_angle(probalbe_next_conditions, inst_force, PROBLEM_CONSTANTS)
-%     pressure_amplitudes_tentative = [probable_next_conditions.pressure_amplitudes, 0];
+function c_angle = pressure_angle(probable_next_conditions, ~, angle_tol)
+%%     pressure_amplitudes_tentative = [probable_next_conditions.pressure_amplitudes, 0];
 %     Cl = @(l)  l * (l-1) / (2*l-1)     * pressure_amplitudes_tentative(l-1);
 %     Dl = @(l)  (l+2) * (l+1) / (2*l+3) * pressure_amplitudes_tentative(l+1);
 %     pressure_amplitudes_tentative = pressure_amplitudes_tentative(1:(end-1));
@@ -233,8 +234,28 @@ function r = pressure_angle(probalbe_next_conditions, inst_force, PROBLEM_CONSTA
 %     end
 %     
 %     inst_force = 4*pi/3 * inst_force; % We take out the dimensionless mass
+    %% Code
+    if norm(probable_next_conditions.pressure_amplitudes) == 0; c_angle = pi;return; end
+    z = zeta_generator(probable_next_conditions.pressure_amplitudes);
+    avg = mean(z(linspace(0, pi/10)));
+    z = @(ang) z(ang) - avg;
+    inst_force = integral(z, pi/2, pi, 'RelTol',1e-5);
 
-
+    c_angle = pi;
+    d_angle = pi/10;
+    F = 0;
+    while d_angle > angle_tol    
+        c_angle = c_angle - d_angle;
+        Fold = F;
+        F = F + integral(@(ang) z(ang), c_angle, c_angle + d_angle, 'RelTol',1e-3);
+        if F >= 0.99 * inst_force && d_angle < angle_tol
+            break;
+        elseif F >= 0.99 * inst_force
+            c_angle = c_angle + d_angle;
+            d_angle = d_angle/2;
+            F = Fold;
+        end
+    end
 end
 
 
