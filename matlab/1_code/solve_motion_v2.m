@@ -4,7 +4,7 @@
 
 function solve_motion_v2()
 
-    %solveMotion_2.1
+    %
     %Tries to solve the full kinematic match between a dropplet
     % and a solid substrate in vacuum conditions.
 
