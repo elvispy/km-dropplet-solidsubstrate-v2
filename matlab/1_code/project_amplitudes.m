@@ -28,11 +28,11 @@ function coefs = project_amplitudes(ff, harmonics_qtt, endpoints, PROBLEM_CONSTA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     if flag
-
             coefs = ((1:harmonics_qtt) + 0.5)' .* ...
                 integral(@(theta) (ff(theta) .* sin(theta)) .* collectPl(harmonics_qtt, cos(theta)), ...
                     endpoints(1), endpoints(2), 'RelTol', 1e-5, 'AbsTol', 1e-5, 'ArrayValued', 1);
-            assert(min(size(coefs)) == 1);
+            if size(coefs, 1) ~= 1; coefs = coefs'; end
+            assert(size(coefs, 1) == 1);
             %fprintf("The norm is: %.4f", norm(coefs
         %end
     else
