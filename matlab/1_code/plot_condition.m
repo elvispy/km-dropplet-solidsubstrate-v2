@@ -1,4 +1,7 @@
 function plot_condition(idx, conditions, varargin)
+%{
+    This function will plot the current conditions of the problem
+%}
     figure(idx);
     if idx == 2
         set(gcf, 'Position', [780 159 760 586]);
@@ -12,12 +15,15 @@ function plot_condition(idx, conditions, varargin)
     arrX = sin(sample);
     arrY = cos(sample);
     etas = zeta_generator(conditions);
+    
     if isstruct(conditions)
         height = conditions.center_of_mass;
         plot([-conditions.contact_radius, conditions.contact_radius], [0, 0], 'g--', 'LineWidth', 3);
         %yline(, 'y', 'LineWidth', 2);
+        nb_harmonics = conditions.nb_harmonics;
     else
-        height = 1 + sum(arrayfun(@(idx) (-1)^idx * conditions(idx), 2:length(conditions)));
+        nb_harmonics = length(conditions);
+        height = 1 + sum(arrayfun(@(idx) (-1)^idx * conditions(idx), 2:nb_harmonics));
     end
     EtaX = arrayfun(@(angle) sin(angle) * (1+  etas(angle)), sample);
     EtaY = height + arrayfun(@(angle) cos(angle) .* (1+  etas(angle)), sample);
@@ -33,7 +39,7 @@ function plot_condition(idx, conditions, varargin)
     
     scatter(0, 0, 'Marker', 'o', 'MarkerEdgeColor', 'b', 'LineWidth', 2, 'SizeData', 10);
     if isstruct(conditions)
-        zps = zeta_generator(conditions.pressure_amplitudes);
+        zps = zeta_generator(conditions.pressure_amplitudes((end-nb_harmonics+1):end));
         avg = mean(zps(linspace(0, pi/10)));
         ps = @(ang) zps(ang) - avg;
         mps = ps(sample);
@@ -41,7 +47,7 @@ function plot_condition(idx, conditions, varargin)
         quiver(EtaX, EtaY, mps .* (-arrX), mps .* (-arrY)); 
         
         if idx ~= 1
-            angle_tol = pi*2/conditions.nb_harmonics;
+            angle_tol = pi*2/nb_harmonics;
             cm = conditions.center_of_mass;
             plot([0, sin(pi+angle_tol)], [cm, cos(pi+angle_tol)], 'b','LineWidth',0.3);
             plot([0, sin(pi-angle_tol)], [cm, cos(pi-angle_tol)], 'b','LineWidth',0.3);

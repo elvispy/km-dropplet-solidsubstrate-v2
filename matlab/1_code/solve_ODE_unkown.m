@@ -25,6 +25,7 @@ function [unkn, vel] = solve_ODE_unkown(deformation, pressures, dt, previous_con
         ck = rk^2/(1+rk);
         coefs = [ck, bk, ak]; 
     end
+    
     om = PROBLEM_CONSTANTS.omegas_frequencies;
     result = (coefs(end)^2/dt + om.^2 * dt) .* deformation + dt * ((1:nb_harmonics)' .* pressures) ...
          + sum(coefs(1:(end-1)) .* (coefs(end) *  previous_deformation/dt + previous_velocities), 2);

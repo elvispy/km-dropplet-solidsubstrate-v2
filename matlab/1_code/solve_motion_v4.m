@@ -2,11 +2,13 @@
 % email: elvisavfc65@gmail.com
 % Date: January 13th, 2023.
 
-function solve_motion_v2()
+function solve_motion_v4()
 
     %
     %Tries to solve the full kinematic match between a dropplet
     % and a solid substrate in vacuum conditions.
+    % THis version uses newton raphson with a coupled set of equations, and
+    % the presure is 0th indexed
 
     %% Handling default arguments. All units are in cgs.
     
@@ -14,7 +16,7 @@ function solve_motion_v2()
     initial_height = Inf;    % Initial position of the sphere center of mass of the sphere (Inf = start at imminent contact)
     initial_velocity = -10; % Initial velocity of the sphere in cm/s
     initial_amplitudes = Inf; % Initial amplitudes of the dropplet (Default = undisturbed) OBS: First index is A_1
-    initial_contact_radius = 0;
+    initial_contact_angle = pi;
     amplitudes_velocities = [];
     rhoS = 0.998;%%%%            % Sphere's density
     sigmaS = 72.20;%%%%%          % Sphere's Surface Tension
@@ -24,7 +26,7 @@ function solve_motion_v2()
     max_dt = 0;         % maximum allowed temporal time step 
     % min_angle = 5/360 * 2 * pi; % Angle tolerance to accept a solution (in radians) 
     spatial_tol = 1e-3;    % Tolerance to accept that dropplet touches the substrate
-    angle_tol =  pi * 5/harmonics_qtt;
+    angle_tol =  pi/harmonics_qtt;
     simulation_time = 1; % Maximum allowed total time
     live_plotting = true; % Whether to plot or not the live results
 
@@ -63,23 +65,25 @@ function solve_motion_v2()
     end
 
     % tan_tol = tan(min_angle);
-
-    initial_pressure_coefficients = zeros(1, harmonics_qtt) / pressure_unit; % Just to emphasize the units of these coefficients.
+    % Zero indexed
+    initial_pressure_coefficients = zeros(1, harmonics_qtt+1) / pressure_unit; % Just to emphasize the units of these coefficients.
 
     if max_dt == 0
-        dt = 0.01/ceil(velocity_unit); 
+        dt = 0.05/ceil(abs(initial_velocity_adim)); 
     else 
         dt = max_dt/time_unit; 
     end
     
-    % Setting dr
+    %{
+ Setting dr
     if isnan(nb_pressure_samples)
-        f = @(t) -t^2/(2 * froude_nb) + initial_velocity_adim * t + initial_height;
-        spatial_step = sqrt(f(0)^2 - f(dt)^2)/2;
+        f2 = @(t) -t^2/(2 * froude_nb) + initial_velocity_adim * t + initial_height;
+        spatial_step = sqrt(f2(0)^2 - f2(dt)^2)/2;
         %spatial_step = 1/harmonics_qtt;
     else
         spatial_step = 1/nb_pressure_samples;
     end
+    %}
     
     initial_time = 0;
     current_time = initial_time/time_unit;
@@ -125,7 +129,7 @@ function solve_motion_v2()
         "DEBUG_FLAG", true); % "wigner3j", {precomputed_wigner(harmonics_qtt)}, ...
 
     %current_conditions = cell(1, 1); % probable_next_conditions = Vector{ProblemConditions}(undef, 5);
-    current_conditions = ProblemConditions_v2( ...
+    current_conditions = ProblemConditions_v4( ...
         harmonics_qtt, ...
         initial_amplitudes, ...
         amplitudes_velocities, ...
@@ -133,7 +137,7 @@ function solve_motion_v2()
         current_time, ...
         dt, ...
         initial_height, ...
-        initial_velocity_adim, initial_contact_radius); % Last argument is contact radius
+        initial_velocity_adim, initial_contact_angle); % Last argument is contact radius
  
     previous_conditions = {current_conditions, current_conditions}; 
     % TODO: Define this array properly to implement BDF2.
@@ -156,7 +160,7 @@ function solve_motion_v2()
 
    %  Preallocate variables that will be exported (All of them have units!)
    recorded_conditions =cell(maximum_index, 1); % Vector{ProblemConditions}(undef, (maximum_index, )); 
-   give_dimensions_v2 = @(X) ProblemConditions_v2( ...
+   give_dimensions_v2 = @(X) ProblemConditions_v4( ...
        X.nb_harmonics, ...
         X.deformation_amplitudes * length_unit, ...
         X.deformation_velocities * velocity_unit, ...
@@ -165,7 +169,7 @@ function solve_motion_v2()
         X.dt * time_unit, ...
         X.center_of_mass * length_unit, ...
         X.center_of_mass_velocity * velocity_unit, ...
-        X.contact_radius * length_unit); 
+        X.contact_angle); 
 
      recorded_conditions{1} = give_dimensions_v2(previous_conditions{end});
 %     
@@ -178,10 +182,11 @@ function solve_motion_v2()
     % p = parpool(5);
     while ( current_time < final_time) 
         % First, we try to solve with the same number of contact points
-        [current_conditions, errorflag] = get_next_step_v2(previous_conditions, dt, PROBLEM_CONSTANTS);
-            
-        if errorflag == true || abs(theta_from_cylindrical( current_conditions.contact_radius, current_conditions)...
-           - theta_from_cylindrical(current_conditions.contact_radius, current_conditions)) > 2*PROBLEM_CONSTANTS.angle_tol
+
+        [current_conditions, errorflag] = get_next_step_v4(previous_conditions, dt, PROBLEM_CONSTANTS);
+
+        if errorflag == true %|| abs(theta_from_cylindrical( current_conditions.contact_radius, current_conditions)...
+           %- theta_from_cylindrical(current_conditions.contact_radius, current_conditions)) > 2*PROBLEM_CONSTANTS.angle_tol
             dt = dt/2;
             disp("Se dividio dt por 2");
             % Refine time step in index notation 
@@ -218,8 +223,8 @@ function solve_motion_v2()
             if live_plotting == true
                 % Do some live plotting here
 
-                plot_title = sprintf(" t = %-8.5f (ms), Contact Radius = %-8g cm, \n v_k = %-8.5f cm/s, z_k = %-8.5f cm\n", ...
-                   1e+3 * current_time * time_unit, current_conditions.contact_radius, ...
+                plot_title = sprintf(" t = %-8.5f (ms), Contact angle = %-8g deg, \n v_k = %-8.5f cm/s, z_k = %-8.5f cm\n", ...
+                   1e+3 * current_time * time_unit, (pi-current_conditions.contact_angle)/pi * 180, ...
                         current_conditions.center_of_mass_velocity * velocity_unit, ...
                         current_conditions.center_of_mass* length_unit);
                 plot_condition(1, current_conditions, 5, plot_title);
@@ -240,6 +245,3 @@ function solve_motion_v2()
  
     
 end
-
-
-        
