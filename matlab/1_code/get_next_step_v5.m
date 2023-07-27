@@ -59,8 +59,11 @@ function [probable_next_conditions, errorflag] = ...
                Xn = X1 + (Xn-X1)/nn * rand();
             end
         end
+        
         A(current_guess_idx+3, :) = [theta_contact, fmin];
         conditions{current_guess_idx+3} = Xmin;
+        
+        
         % Update theta_contact
 
     end
@@ -87,3 +90,31 @@ function [probable_next_conditions, errorflag] = ...
 
     
 end % end main function definition
+
+function contact_angle = calculate_contact_angle(new_amplitudes, ...
+    new_centerofmass, PROBLEM_CONSTANTS)%, previous_contact_radius, probable_pressures)
+    
+
+    
+    zeta = zeta_generator(new_amplitudes);
+    z = @(theta) new_centerofmass + cos(theta) .* (1 + zeta(theta));
+    
+    N = 500;
+    contact_angle_upper = pi;
+    contact_angle_lower = pi/2;
+    while contact_angle_upper - contact_angle_lower >= PROBLEM_CONSTANTS.angle_tol
+        midpoint = contact_angle_upper/2 + contact_angle_lower/2; 
+        if z(midpoint) < 0
+            contact_angle_upper = midpoint;
+        else
+            contact_angle_lower = midpoint;
+        end
+    end
+    if all(z(( pi - contact_angle_upper ) * rand(20, 1) + contact_angle_upper) < 0)
+        contact_angle = contact_angle_upper;
+    else
+        throw("maximum contact angle not found")
+    end
+    
+        
+end

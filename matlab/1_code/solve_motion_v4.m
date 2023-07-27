@@ -69,7 +69,7 @@ function solve_motion_v4()
     initial_pressure_coefficients = zeros(1, harmonics_qtt+1) / pressure_unit; % Just to emphasize the units of these coefficients.
 
     if max_dt == 0
-        dt = 0.05/ceil(abs(initial_velocity_adim)); 
+        dt = 0.01/ceil(abs(initial_velocity_adim)); 
     else 
         dt = max_dt/time_unit; 
     end
