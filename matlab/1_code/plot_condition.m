@@ -55,7 +55,7 @@ function plot_condition(idx, conditions, varargin)
     end
     
     if nargin > 2 && isstruct(conditions)
-        x = 0.15 + floor(3*conditions.contact_radius)/3; % 0.1 + conditions.contact_radius;
+        x = 0.15 + ceil(3*conditions.contact_radius)/3; % 0.1 + conditions.contact_radius;
     else
         x = 0.05;
     end

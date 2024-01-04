@@ -8,7 +8,7 @@ function solve_motion_v4()
     %Tries to solve the full kinematic match between a dropplet
     % and a solid substrate in vacuum conditions.
     % THis version uses newton raphson with a coupled set of equations, and
-    % the presure is 0th indexed
+    % the presure vector is 0th indexed
 
     %% Handling default arguments. All units are in cgs.
     
@@ -227,7 +227,7 @@ function solve_motion_v4()
                    1e+3 * current_time * time_unit, (pi-current_conditions.contact_angle)/pi * 180, ...
                         current_conditions.center_of_mass_velocity * velocity_unit, ...
                         current_conditions.center_of_mass* length_unit);
-                plot_condition(1, current_conditions, 5, plot_title);
+                plot_condition(1, current_conditions, 3, plot_title);
 
             else
                 % Do some real-time variable updating here
